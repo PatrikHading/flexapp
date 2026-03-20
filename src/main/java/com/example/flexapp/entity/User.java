@@ -37,6 +37,9 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "active", nullable = false)
+    private Boolean active;
+
     @PrePersist
     public void prePersist(){
         this.createdAt = LocalDateTime.now();
