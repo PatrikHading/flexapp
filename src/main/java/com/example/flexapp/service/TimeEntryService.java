@@ -43,6 +43,52 @@ public class TimeEntryService {
         return timeEntryRepository.save(timeEntry);
     }
 
+    public TimeEntry lunchOut(Long userId) {
+        TimeEntry timeEntry = getTodayEntry(userId);
+
+        if (timeEntry.getCheckInTime() == null) {
+            throw new IllegalStateException("User must check in before starting lunch");
+        }
+
+        if (timeEntry.getCheckOutTime() != null) {
+            throw new IllegalStateException("User has already checked out for today");
+        }
+
+        if (timeEntry.getLunchOutTime() != null) {
+            throw new IllegalStateException("Lunch has already been started for today");
+        }
+
+        timeEntry.setLunchOutTime(LocalDateTime.now());
+        timeEntry.setStatus(TimeEntryStatus.LUNCH);
+
+        return timeEntryRepository.save(timeEntry);
+    }
+
+    public TimeEntry lunchIn(Long userId) {
+        TimeEntry timeEntry = getTodayEntry(userId);
+
+        if (timeEntry.getCheckInTime() == null) {
+            throw new IllegalStateException("User must check in before ending lunch");
+        }
+
+        if (timeEntry.getCheckOutTime() != null) {
+            throw new IllegalStateException("User has already checked out for today");
+        }
+
+        if (timeEntry.getLunchOutTime() == null) {
+            throw new IllegalStateException("Lunch has not been started for today");
+        }
+
+        if (timeEntry.getLunchInTime() != null) {
+            throw new IllegalStateException("Lunch has already been ended.");
+        }
+
+        timeEntry.setLunchInTime(LocalDateTime.now());
+        timeEntry.setStatus(TimeEntryStatus.OPEN);
+
+        return timeEntryRepository.save(timeEntry);
+    }
+
     public TimeEntry getTodayEntry(Long userId) {
         return timeEntryRepository.findByUserIdAndWorkDate(userId, LocalDate.now())
                 .orElseThrow(() -> new IllegalArgumentException("No time entry found for today."));
