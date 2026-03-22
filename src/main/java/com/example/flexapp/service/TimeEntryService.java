@@ -1,5 +1,6 @@
 package com.example.flexapp.service;
 
+import com.example.flexapp.dto.FlexBalanceResponse;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class TimeEntryService {
@@ -151,6 +153,32 @@ public class TimeEntryService {
 
     public TimeEntryResponse getTodayEntry(Long userId) {
         return toResponse(getTodayEntryEntity(userId));
+    }
+
+    public List<TimeEntryResponse> getHistory(Long userId) {
+        return timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public FlexBalanceResponse getFlexBalance(Long userId) {
+        validateUserExists(userId);
+
+        int totalFlexMinutes = timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
+                .stream()
+                .map(TimeEntry::getFlexMinutes)
+                .filter(flexMinutes -> flexMinutes != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        return new FlexBalanceResponse(userId, totalFlexMinutes);
+    }
+
+    private void validateUserExists(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found with id: " + userId);
+        }
     }
 
     private TimeEntry getTodayEntryEntity(Long userId) {

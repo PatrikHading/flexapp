@@ -1,8 +1,11 @@
 package com.example.flexapp.controller;
 
+import com.example.flexapp.dto.FlexBalanceResponse;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.service.TimeEntryService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/time")
@@ -37,6 +40,16 @@ public class TimeEntryController {
     @GetMapping("/{userId}/today")
     public TimeEntryResponse getTodayEntry(@PathVariable Long userId) {
         return timeEntryService.getTodayEntry(userId);
+    }
+
+    @GetMapping("/{userId}/history")
+    public List<TimeEntryResponse> getHistory(@PathVariable Long userId) {
+        return timeEntryService.getHistory(userId);
+    }
+
+    @GetMapping("/{userId}/flex-balance")
+    public FlexBalanceResponse getFlexBalance(@PathVariable Long userId) {
+        return timeEntryService.getFlexBalance(userId);
     }
 
 
