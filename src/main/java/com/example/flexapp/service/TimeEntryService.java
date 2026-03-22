@@ -5,6 +5,8 @@ import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
 import com.example.flexapp.entity.WorkSchedule;
 import com.example.flexapp.enums.TimeEntryStatus;
+import com.example.flexapp.exception.BadRequestException;
+import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.TimeEntryRepository;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
@@ -36,14 +38,14 @@ public class TimeEntryService {
 
     public TimeEntryResponse checkIn(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         LocalDate today = LocalDate.now();
 
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, today).orElse(null);
 
         if (existingEntry != null && existingEntry.getCheckInTime() != null) {
-            throw new IllegalStateException("User is already checked in for today.");
+            throw new BadRequestException("User is already checked in for today.");
         }
 
         TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
@@ -61,15 +63,15 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before starting lunch.");
+            throw new BadRequestException("User must check in before starting lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today.");
+            throw new BadRequestException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null) {
-            throw new IllegalStateException("Lunch has already been started.");
+            throw new BadRequestException("Lunch has already been started.");
         }
 
         timeEntry.setLunchOutTime(LocalDateTime.now());
@@ -82,19 +84,19 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before ending lunch.");
+            throw new BadRequestException("User must check in before ending lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today.");
+            throw new BadRequestException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() == null) {
-            throw new IllegalStateException("Lunch has not been started.");
+            throw new BadRequestException("Lunch has not been started.");
         }
 
         if (timeEntry.getLunchInTime() != null) {
-            throw new IllegalStateException("Lunch has already been ended.");
+            throw new BadRequestException("Lunch has already been ended.");
         }
 
         timeEntry.setLunchInTime(LocalDateTime.now());
@@ -107,19 +109,19 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before checking out.");
+            throw new BadRequestException("User must check in before checking out.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today.");
+            throw new BadRequestException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null && timeEntry.getLunchInTime() == null) {
-            throw new IllegalStateException("User cannot check out while lunch is active.");
+            throw new BadRequestException("User cannot check out while lunch is active.");
         }
 
         WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, timeEntry.getWorkDate())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No work schedule found for userId " + userId + " and date " + timeEntry.getWorkDate()
                 ));
 
@@ -153,7 +155,7 @@ public class TimeEntryService {
 
     private TimeEntry getTodayEntryEntity(Long userId) {
         return timeEntryRepository.findByUserIdAndWorkDate(userId, LocalDate.now())
-                .orElseThrow(() -> new IllegalArgumentException("No time entry found for today."));
+                .orElseThrow(() -> new ResourceNotFoundException("No time entry found for today."));
     }
 
     private TimeEntryResponse toResponse(TimeEntry timeEntry) {
