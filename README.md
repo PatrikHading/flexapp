@@ -49,6 +49,7 @@ Initial time tracking flow now supports check-in, lunch-out, lunch-in and check-
 Worked minutes and lunch minutes are now calculated and stored in the database
 Flex balance calculation is now implemented
 Spring Security implemented for protected endpoints
+Global exception handling implemented for all endpoints
 ```
 
 ---
