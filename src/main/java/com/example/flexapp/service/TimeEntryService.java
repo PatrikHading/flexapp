@@ -2,9 +2,12 @@ package com.example.flexapp.service;
 
 import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
+import com.example.flexapp.entity.WorkSchedule;
 import com.example.flexapp.enums.TimeEntryStatus;
 import com.example.flexapp.repository.TimeEntryRepository;
 import com.example.flexapp.repository.UserRepository;
+import com.example.flexapp.repository.WorkScheduleRepository;
+import com.example.flexapp.service.FlexCalculationService;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,10 +20,17 @@ public class TimeEntryService {
 
     private final TimeEntryRepository timeEntryRepository;
     private final UserRepository userRepository;
+    private final WorkScheduleRepository workScheduleRepository;
+    private final FlexCalculationService flexCalculationService;
 
-    public TimeEntryService(TimeEntryRepository timeEntryRepository, UserRepository userRepository) {
+    public TimeEntryService(TimeEntryRepository timeEntryRepository,
+                            UserRepository userRepository,
+                            WorkScheduleRepository workScheduleRepository,
+                            FlexCalculationService flexCalculationService) {
         this.timeEntryRepository = timeEntryRepository;
         this.userRepository = userRepository;
+        this.workScheduleRepository = workScheduleRepository;
+        this.flexCalculationService = flexCalculationService;
     }
 
     public TimeEntry checkIn(Long userId) {
@@ -32,7 +42,7 @@ public class TimeEntryService {
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, today).orElse(null);
 
         if (existingEntry != null && existingEntry.getCheckInTime() != null) {
-            throw new IllegalStateException("User is already checked in for today");
+            throw new IllegalStateException("User is already checked in for today.");
         }
 
         TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
@@ -50,15 +60,15 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntry(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before starting lunch");
+            throw new IllegalStateException("User must check in before starting lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today");
+            throw new IllegalStateException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null) {
-            throw new IllegalStateException("Lunch has already been started for today");
+            throw new IllegalStateException("Lunch has already been started.");
         }
 
         timeEntry.setLunchOutTime(LocalDateTime.now());
@@ -71,15 +81,15 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntry(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before ending lunch");
+            throw new IllegalStateException("User must check in before ending lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today");
+            throw new IllegalStateException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() == null) {
-            throw new IllegalStateException("Lunch has not been started for today");
+            throw new IllegalStateException("Lunch has not been started.");
         }
 
         if (timeEntry.getLunchInTime() != null) {
@@ -96,25 +106,41 @@ public class TimeEntryService {
         TimeEntry timeEntry = getTodayEntry(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new IllegalStateException("User must check in before checking out");
+            throw new IllegalStateException("User must check in before checking out.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new IllegalStateException("User has already checked out for today");
+            throw new IllegalStateException("User has already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null && timeEntry.getLunchInTime() == null) {
-            throw new IllegalStateException("User cannot check out while lunch is still in progress");
+            throw new IllegalStateException("User cannot check out while lunch is active.");
         }
+
+        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, timeEntry.getWorkDate())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No work schedule found for userId " + userId + " and date " + timeEntry.getWorkDate()
+                ));
 
         LocalDateTime checkOutTime = LocalDateTime.now();
         timeEntry.setCheckOutTime(checkOutTime);
 
-        int lunchMinutes = calculateLunchMinutes(timeEntry);
-        int workedMinutes = calculateWorkedMinutes(timeEntry.getCheckInTime(), checkOutTime, lunchMinutes);
+        int lunchMinutes = flexCalculationService.calculateLunchMinutes(timeEntry);
+        int extraLunchMinutes = flexCalculationService.calculateExtraLunchMinutes(
+                lunchMinutes,
+                schedule.getPaidLunchMinutes()
+        );
+        int workedMinutes = flexCalculationService.calculateWorkedMinutes(
+                timeEntry.getCheckInTime(),
+                checkOutTime,
+                lunchMinutes
+        );
+        int flexMinutes = flexCalculationService.calculateFlexMinutes(schedule, timeEntry);
 
         timeEntry.setLunchMinutes(lunchMinutes);
+        timeEntry.setExtraLunchMinutes(extraLunchMinutes);
         timeEntry.setWorkedMinutes(workedMinutes);
+        timeEntry.setFlexMinutes(flexMinutes);
         timeEntry.setStatus(TimeEntryStatus.COMPLETED);
 
         return timeEntryRepository.save(timeEntry);
@@ -124,17 +150,4 @@ public class TimeEntryService {
         return timeEntryRepository.findByUserIdAndWorkDate(userId, LocalDate.now())
                 .orElseThrow(() -> new IllegalArgumentException("No time entry found for today."));
     }
-
-    private int calculateLunchMinutes(TimeEntry timeEntry) {
-        if (timeEntry.getLunchOutTime() == null || timeEntry.getLunchInTime() == null) {
-            return 0;
-        }
-        return (int) Duration.between(timeEntry.getLunchOutTime(), timeEntry.getLunchInTime()).toMinutes();
-    }
-
-    private int calculateWorkedMinutes(LocalDateTime checkInTime, LocalDateTime checkOutTime, int lunchMinutes) {
-        int totalMinutes = (int) Duration.between(checkInTime, checkOutTime).toMinutes();
-        return totalMinutes - lunchMinutes;
-    }
-
 }
