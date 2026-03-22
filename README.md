@@ -47,6 +47,7 @@ Initial check-in logic is implemented and persisted to the database
 Initial time tracking flow now supports check-in, lunch-out and lunch-in
 Initial time tracking flow now supports check-in, lunch-out, lunch-in and check-out
 Worked minutes and lunch minutes are now calculated and stored in the database
+Flex balance calculation is now implemented
 ```
 
 ---
