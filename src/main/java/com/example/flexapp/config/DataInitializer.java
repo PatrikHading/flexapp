@@ -1,11 +1,8 @@
 package com.example.flexapp.config;
 
-import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
 import com.example.flexapp.enums.Role;
-import com.example.flexapp.repository.TimeEntryRepository;
 import com.example.flexapp.repository.UserRepository;
-import com.example.flexapp.service.TimeEntryService;
 import com.example.flexapp.service.WorkScheduleService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -17,19 +14,10 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final WorkScheduleService workScheduleService;
-    private final TimeEntryService timeEntryService;
-    private final TimeEntryRepository timeEntryRepository;
 
-
-
-    public DataInitializer(UserRepository userRepository,
-                           WorkScheduleService workScheduleService,
-                           TimeEntryService timeEntryService,
-                           TimeEntryRepository timeEntryRepository) {
+    public DataInitializer(UserRepository userRepository, WorkScheduleService workScheduleService) {
         this.userRepository = userRepository;
         this.workScheduleService = workScheduleService;
-        this.timeEntryService = timeEntryService;
-        this.timeEntryRepository = timeEntryRepository;
     }
 
     @Override
@@ -52,36 +40,12 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now(),
                 LocalTime.of(8, 0),
                 LocalTime.of(16, 0),
-                30
-        );
-
-        TimeEntry timeEntry = timeEntryRepository.findByUserIdAndWorkDate(user.getId(), LocalDate.now())
-                .orElseGet(() -> timeEntryService.checkIn(user.getId()));
-
-        if (timeEntry.getLunchOutTime() == null) {
-            timeEntry = timeEntryService.lunchOut(user.getId());
-            System.out.println("Lunch out created for admin user.");
-        } else {
-            System.out.println("Lunch out already exists.");
-        }
-
-        if (timeEntry.getLunchInTime() == null) {
-            timeEntry = timeEntryService.lunchIn(user.getId());
-            System.out.println("Lunch in created for admin user.");
-        } else {
-            System.out.println("Lunch in already exists.");
-        }
-
-        timeEntry = timeEntryRepository.findByUserIdAndWorkDate(user.getId(), LocalDate.now()).orElseThrow();
-
-        if (timeEntry.getCheckOutTime() == null) {
-            timeEntryService.checkOut(user.getId());
-            System.out.println("Check out created for admin user.");
-        } else {
-            System.out.println("Check out already exists.");
-        }
+                30);
 
         System.out.println("Admin user exists: " + email);
-        System.out.println("Work schedule created/updated for today");
+        System.out.println("Work schedule exists for today.");
+        System.out.println("Admin user id: " + user.getId());
+
     }
 }
+

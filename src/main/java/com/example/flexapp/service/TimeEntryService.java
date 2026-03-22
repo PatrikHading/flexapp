@@ -1,5 +1,6 @@
 package com.example.flexapp.service;
 
+import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
 import com.example.flexapp.entity.WorkSchedule;
@@ -33,7 +34,7 @@ public class TimeEntryService {
         this.flexCalculationService = flexCalculationService;
     }
 
-    public TimeEntry checkIn(Long userId) {
+    public TimeEntryResponse checkIn(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
 
@@ -53,11 +54,11 @@ public class TimeEntryService {
         timeEntry.setStatus(TimeEntryStatus.OPEN);
         timeEntry.setManualEntry(false);
 
-        return timeEntryRepository.save(timeEntry);
+        return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntry lunchOut(Long userId) {
-        TimeEntry timeEntry = getTodayEntry(userId);
+    public TimeEntryResponse lunchOut(Long userId) {
+        TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
             throw new IllegalStateException("User must check in before starting lunch.");
@@ -74,11 +75,11 @@ public class TimeEntryService {
         timeEntry.setLunchOutTime(LocalDateTime.now());
         timeEntry.setStatus(TimeEntryStatus.LUNCH);
 
-        return timeEntryRepository.save(timeEntry);
+        return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntry lunchIn(Long userId) {
-        TimeEntry timeEntry = getTodayEntry(userId);
+    public TimeEntryResponse lunchIn(Long userId) {
+        TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
             throw new IllegalStateException("User must check in before ending lunch.");
@@ -99,11 +100,11 @@ public class TimeEntryService {
         timeEntry.setLunchInTime(LocalDateTime.now());
         timeEntry.setStatus(TimeEntryStatus.OPEN);
 
-        return timeEntryRepository.save(timeEntry);
+        return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntry checkOut(Long userId) {
-        TimeEntry timeEntry = getTodayEntry(userId);
+    public TimeEntryResponse checkOut(Long userId) {
+        TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
             throw new IllegalStateException("User must check in before checking out.");
@@ -143,11 +144,34 @@ public class TimeEntryService {
         timeEntry.setFlexMinutes(flexMinutes);
         timeEntry.setStatus(TimeEntryStatus.COMPLETED);
 
-        return timeEntryRepository.save(timeEntry);
+        return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntry getTodayEntry(Long userId) {
+    public TimeEntryResponse getTodayEntry(Long userId) {
+        return toResponse(getTodayEntryEntity(userId));
+    }
+
+    private TimeEntry getTodayEntryEntity(Long userId) {
         return timeEntryRepository.findByUserIdAndWorkDate(userId, LocalDate.now())
                 .orElseThrow(() -> new IllegalArgumentException("No time entry found for today."));
+    }
+
+    private TimeEntryResponse toResponse(TimeEntry timeEntry) {
+        return new TimeEntryResponse(
+                timeEntry.getId(),
+                timeEntry.getUser().getId(),
+                timeEntry.getWorkDate(),
+                timeEntry.getCheckInTime(),
+                timeEntry.getLunchOutTime(),
+                timeEntry.getLunchInTime(),
+                timeEntry.getCheckOutTime(),
+                timeEntry.getWorkedMinutes(),
+                timeEntry.getLunchMinutes(),
+                timeEntry.getExtraLunchMinutes(),
+                timeEntry.getFlexMinutes(),
+                timeEntry.isManualEntry(),
+                timeEntry.getComment(),
+                timeEntry.getStatus()
+        );
     }
 }
