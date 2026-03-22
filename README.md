@@ -50,6 +50,7 @@ Worked minutes and lunch minutes are now calculated and stored in the database
 Flex balance calculation is now implemented
 Spring Security implemented for protected endpoints
 Global exception handling implemented for all endpoints
+Total flex balance is calculated from stored daily time entries
 ```
 
 ---
@@ -97,6 +98,8 @@ POST `/api/time/{userId}/lunch-out`
 POST `/api/time/{userId}/lunch-in`
 POST `/api/time/{userId}/check-out}`
 GET `/api/time/{userId}/today`
+GET `/api/time/{userId}/history`
+GET `/api/time/{userId}/flex-balance`
 ```
 ---
 
