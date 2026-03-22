@@ -100,6 +100,9 @@ POST `/api/time/{userId}/check-out}`
 GET `/api/time/{userId}/today`
 GET `/api/time/{userId}/history`
 GET `/api/time/{userId}/flex-balance`
+POST `/api/schedules/{userId}`
+POST `/api/schedules/{userId}`
+GET `/api/schedules/{userId}`
 ```
 ---
 
