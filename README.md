@@ -80,6 +80,14 @@ The application starts at:
 http://localhost:8080
 ```
 
+## Authentication
+The API now uses Spring Security with HTTP Basic authentication for protected endpoints.
+```
+Current test user:
+email: `admin@flexapp.com`
+password: `temp123`
+```
+
 ## Current API
 ```bash
 POST `/api/time/{userId}/check-in`
