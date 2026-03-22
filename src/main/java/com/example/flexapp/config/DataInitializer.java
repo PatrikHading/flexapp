@@ -72,6 +72,15 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Lunch in already exists.");
         }
 
+        timeEntry = timeEntryRepository.findByUserIdAndWorkDate(user.getId(), LocalDate.now()).orElseThrow();
+
+        if (timeEntry.getCheckOutTime() == null) {
+            timeEntryService.checkOut(user.getId());
+            System.out.println("Check out created for admin user.");
+        } else {
+            System.out.println("Check out already exists.");
+        }
+
         System.out.println("Admin user exists: " + email);
         System.out.println("Work schedule created/updated for today");
     }
