@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .userDetailsService(customUserDetailsService)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/time/**").authenticated()
+                        .requestMatchers("/api/time/**", "/api/schedules/**").authenticated()
                         .anyRequest()
                         .permitAll()
                 ).httpBasic(Customizer.withDefaults())
