@@ -44,7 +44,9 @@ Initial domain model created for users, work schedules, and time entries
 Work schedules can now be stored and updated for users
 Planned work schedules can be stored
 Initial check-in logic is implemented and persisted to the database
-Initial time tracking floq now supports check.in, lunch out and lunch in
+Initial time tracking flow now supports check-in, lunch-out and lunch-in
+Initial time tracking flow now supports check-in, lunch-out, lunch-in and check-out
+Worked minutes and lunch minutes are now calculated and stored in the database
 ```
 
 ---
