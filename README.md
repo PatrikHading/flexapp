@@ -80,6 +80,14 @@ The application starts at:
 http://localhost:8080
 ```
 
+## Current API
+```bash
+POST `/api/time/{userId}/check-in`
+POST `/api/time/{userId}/lunch-out`
+POST `/api/time/{userId}/lunch-in`
+POST `/api/time/{userId}/check-out}`
+GET `/api/time/{userId}/today`
+```
 ---
 
 ## License
