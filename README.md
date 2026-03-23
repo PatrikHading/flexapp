@@ -91,6 +91,12 @@ email: `admin@flexapp.com`
 password: `temp123`
 ```
 
+## Authorization
+```
+User can only access their own schedules and time entries
+Admin can access all users' schedules and time entries
+```
+
 ## Current API
 ```bash
 POST `/api/time/{userId}/check-in`
