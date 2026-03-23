@@ -103,6 +103,7 @@ GET `/api/time/{userId}/flex-balance`
 POST `/api/schedules/{userId}`
 POST `/api/schedules/{userId}`
 GET `/api/schedules/{userId}`
+POST `/api/time/{userId}/manual`
 ```
 ---
 
