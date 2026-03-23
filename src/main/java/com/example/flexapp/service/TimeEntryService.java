@@ -12,11 +12,9 @@ import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.TimeEntryRepository;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
-import com.example.flexapp.service.FlexCalculationService;
+import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Duration;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,18 +26,23 @@ public class TimeEntryService {
     private final UserRepository userRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final FlexCalculationService flexCalculationService;
+    private final SecurityService securityService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository,
                             UserRepository userRepository,
                             WorkScheduleRepository workScheduleRepository,
-                            FlexCalculationService flexCalculationService) {
+                            FlexCalculationService flexCalculationService,
+                            SecurityService securityService) {
         this.timeEntryRepository = timeEntryRepository;
         this.userRepository = userRepository;
         this.workScheduleRepository = workScheduleRepository;
         this.flexCalculationService = flexCalculationService;
+        this.securityService = securityService;
     }
 
     public TimeEntryResponse checkIn(Long userId) {
+        securityService.validateUserAccess(userId);
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -63,6 +66,8 @@ public class TimeEntryService {
     }
 
     public TimeEntryResponse lunchOut(Long userId) {
+        securityService.validateUserAccess(userId);
+
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
@@ -84,6 +89,8 @@ public class TimeEntryService {
     }
 
     public TimeEntryResponse lunchIn(Long userId) {
+        securityService.validateUserAccess(userId);
+
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
@@ -109,6 +116,8 @@ public class TimeEntryService {
     }
 
     public TimeEntryResponse checkOut(Long userId) {
+        securityService.validateUserAccess(userId);
+
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
@@ -138,6 +147,8 @@ public class TimeEntryService {
     }
 
     public TimeEntryResponse registerManualEntry(Long userId, ManualTimeEntryRequest request) {
+        securityService.validateUserAccess(userId);
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -167,10 +178,14 @@ public class TimeEntryService {
     }
 
     public TimeEntryResponse getTodayEntry(Long userId) {
+        securityService.validateUserAccess(userId);
         return toResponse(getTodayEntryEntity(userId));
     }
 
     public List<TimeEntryResponse> getHistory(Long userId) {
+        securityService.validateUserAccess(userId);
+        validateUserExists(userId);
+
         return timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
                 .stream()
                 .map(this::toResponse)
@@ -178,6 +193,7 @@ public class TimeEntryService {
     }
 
     public FlexBalanceResponse getFlexBalance(Long userId) {
+        securityService.validateUserAccess(userId);
         validateUserExists(userId);
 
         int totalFlexMinutes = timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
@@ -202,7 +218,7 @@ public class TimeEntryService {
         }
 
         if (request.getCheckInTime() == null || request.getCheckOutTime() == null) {
-            throw new BadRequestException("Check-in and check-out times are required.");
+            throw new BadRequestException("Check-in time and check-out time are required.");
         }
 
         if (!request.getCheckOutTime().isAfter(request.getCheckInTime())) {
@@ -249,7 +265,6 @@ public class TimeEntryService {
         timeEntry.setExtraLunchMinutes(extraLunchMinutes);
         timeEntry.setWorkedMinutes(workedMinutes);
         timeEntry.setFlexMinutes(flexMinutes);
-
     }
 
     private TimeEntry getTodayEntryEntity(Long userId) {

@@ -8,6 +8,7 @@ import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.repository.UserRepository;
+import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -18,10 +19,14 @@ public class WorkScheduleService {
 
     private final WorkScheduleRepository workScheduleRepository;
     private final UserRepository userRepository;
+    private final SecurityService securityService;
 
-    public WorkScheduleService(WorkScheduleRepository workScheduleRepository, UserRepository userRepository) {
+    public WorkScheduleService(WorkScheduleRepository workScheduleRepository,
+                               UserRepository userRepository,
+                               SecurityService securityService) {
         this.workScheduleRepository = workScheduleRepository;
         this.userRepository = userRepository;
+        this.securityService = securityService;
     }
 
     public WorkSchedule createOrUpdateSchedule(Long userId,
@@ -32,6 +37,8 @@ public class WorkScheduleService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+
+        validateScheduleInput(plannedStartTime, plannedEndTime, paidLunchMinutes);
 
         int expectedWorkMinutes = calculateExpectedWorkMinutes(plannedStartTime, plannedEndTime);
 
@@ -49,6 +56,8 @@ public class WorkScheduleService {
     }
 
     public WorkScheduleResponse createOrUpdateSchedule(Long userId, WorkScheduleRequest request) {
+        securityService.validateUserAccess(userId);
+
         WorkSchedule saved = createOrUpdateSchedule(
                 userId,
                 request.getWorkDate(),
@@ -61,6 +70,8 @@ public class WorkScheduleService {
     }
 
     public WorkScheduleResponse getScheduleForDate(Long userId, LocalDate workDate) {
+        securityService.validateUserAccess(userId);
+
         WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, workDate)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No work schedule found for userId " + userId + " and date " + workDate
@@ -70,6 +81,8 @@ public class WorkScheduleService {
     }
 
     public List<WorkScheduleResponse> getSchedules(Long userId) {
+        securityService.validateUserAccess(userId);
+
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }

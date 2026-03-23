@@ -17,7 +17,9 @@ public class DataInitializer implements CommandLineRunner {
     private final WorkScheduleService workScheduleService;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UserRepository userRepository, WorkScheduleService workScheduleService, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository,
+                           WorkScheduleService workScheduleService,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.workScheduleService = workScheduleService;
         this.passwordEncoder = passwordEncoder;
@@ -25,39 +27,69 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        String email = "admin@flexapp.com";
-        String rawPassword = "temp123";
+        createOrUpdateUser(
+                "admin@flexapp.com",
+                "Admin",
+                "User",
+                "temp123",
+                Role.ADMIN
+        );
 
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setFirstName("Admin");
-            newUser.setLastName("User");
-            newUser.setEmail(email);
-            newUser.setPassword(passwordEncoder.encode(rawPassword));
-            newUser.setRole(Role.ADMIN);
-            newUser.setActive(true);
-            return userRepository.save(newUser);
-        });
+        createOrUpdateUser(
+                "user@flexapp.com",
+                "Normal",
+                "User",
+                "temp123",
+                Role.USER
+        );
 
-        if (!user.getPassword().startsWith("$2a$") &&
-                !user.getPassword().startsWith("$2b$") &&
-                !user.getPassword().startsWith("$2y$")) {
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            userRepository.save(user);
-        }
+        User admin = userRepository.findByEmail("admin@flexapp.com").orElseThrow();
+        User user = userRepository.findByEmail("user@flexapp.com").orElseThrow();
+
+        workScheduleService.createOrUpdateSchedule(
+            admin.getId(),
+            LocalDate.now(),
+            LocalTime.of(8, 0),
+            LocalTime.of(16, 0),
+            30
+        );
 
         workScheduleService.createOrUpdateSchedule(
                 user.getId(),
                 LocalDate.now(),
                 LocalTime.of(8, 0),
                 LocalTime.of(16, 0),
-                30);
+                30
+        );
 
-        System.out.println("Admin user exists: " + email);
-        System.out.println("Admin password: " + rawPassword);
-        System.out.println("Work schedule exists for today.");
-        System.out.println("Admin user id: " + user.getId());
+        System.out.println("Admin user: admin@flexapp.com / temp123 / id=" + admin.getId());
+        System.out.println("Normal user: user@flexapp.com / temp123 / id=" + user.getId());
+    }
 
+    private void createOrUpdateUser(String email,
+                                    String firstName,
+                                    String lastName,
+                                    String rawPassword,
+                                    Role role) {
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail(email);
+            return newUser;
+        });
+
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setRole(role);
+        user.setActive(true);
+
+        if (user.getPassword() == null
+                || !user.getPassword().startsWith("$2a$")
+                && !user.getPassword().startsWith("$2b$")
+                && !user.getPassword().startsWith("$2y$")) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+
+        }
+        userRepository.save(user);
     }
 }
 
