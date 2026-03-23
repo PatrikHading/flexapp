@@ -1,6 +1,7 @@
 package com.example.flexapp.service;
 
 import com.example.flexapp.dto.FlexBalanceResponse;
+import com.example.flexapp.dto.ManualTimeEntryRequest;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.User;
@@ -130,23 +131,37 @@ public class TimeEntryService {
         LocalDateTime checkOutTime = LocalDateTime.now();
         timeEntry.setCheckOutTime(checkOutTime);
 
-        int lunchMinutes = flexCalculationService.calculateLunchMinutes(timeEntry);
-        int extraLunchMinutes = flexCalculationService.calculateExtraLunchMinutes(
-                lunchMinutes,
-                schedule.getPaidLunchMinutes()
-        );
-        int workedMinutes = flexCalculationService.calculateWorkedMinutes(
-                timeEntry.getCheckInTime(),
-                checkOutTime,
-                lunchMinutes
-        );
-        int flexMinutes = flexCalculationService.calculateFlexMinutes(schedule, timeEntry);
-
-        timeEntry.setLunchMinutes(lunchMinutes);
-        timeEntry.setExtraLunchMinutes(extraLunchMinutes);
-        timeEntry.setWorkedMinutes(workedMinutes);
-        timeEntry.setFlexMinutes(flexMinutes);
+        applyCalculatedFields(timeEntry, schedule);
         timeEntry.setStatus(TimeEntryStatus.COMPLETED);
+
+        return toResponse(timeEntryRepository.save(timeEntry));
+    }
+
+    public TimeEntryResponse registerManualEntry(Long userId, ManualTimeEntryRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        validateManualRequest(request);
+
+        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No work schedule found for userId " + userId + " and date " + request.getWorkDate()
+                ));
+
+        TimeEntry timeEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
+                .orElseGet(TimeEntry::new);
+
+        timeEntry.setUser(user);
+        timeEntry.setWorkDate(request.getWorkDate());
+        timeEntry.setCheckInTime(request.getCheckInTime());
+        timeEntry.setLunchOutTime(request.getLunchOutTime());
+        timeEntry.setLunchInTime(request.getLunchInTime());
+        timeEntry.setCheckOutTime(request.getCheckOutTime());
+        timeEntry.setComment(request.getComment());
+        timeEntry.setManualEntry(true);
+
+        applyCalculatedFields(timeEntry, schedule);
+        timeEntry.setStatus(TimeEntryStatus.MANUAL);
 
         return toResponse(timeEntryRepository.save(timeEntry));
     }
@@ -179,6 +194,62 @@ public class TimeEntryService {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
+    }
+
+    private void validateManualRequest(ManualTimeEntryRequest request) {
+        if (request.getWorkDate() == null) {
+            throw new BadRequestException("Work date is required.");
+        }
+
+        if (request.getCheckInTime() == null || request.getCheckOutTime() == null) {
+            throw new BadRequestException("Check-in and check-out times are required.");
+        }
+
+        if (!request.getCheckOutTime().isAfter(request.getCheckInTime())) {
+            throw new BadRequestException("Check-out time must be after check-in time.");
+        }
+
+        if (request.getLunchOutTime() != null && request.getLunchInTime() == null) {
+            throw new BadRequestException("Lunch in time is required when lunch out time is provided.");
+        }
+
+        if (request.getLunchOutTime() == null && request.getLunchInTime() != null) {
+            throw new BadRequestException("Lunch out time is required when lunch in time is provided.");
+        }
+
+        if (request.getLunchOutTime() != null && request.getLunchInTime() != null) {
+            if (!request.getLunchOutTime().isAfter(request.getCheckInTime())) {
+                throw new BadRequestException("Lunch out time must be after check-in time.");
+            }
+
+            if (!request.getLunchInTime().isAfter(request.getLunchOutTime())) {
+                throw new BadRequestException("Lunch in time must be after lunch out time.");
+            }
+
+            if (!request.getCheckOutTime().isAfter(request.getLunchInTime())) {
+                throw new BadRequestException("Check-out time must be after lunch in time.");
+            }
+        }
+    }
+
+    private void applyCalculatedFields(TimeEntry timeEntry, WorkSchedule schedule) {
+        int lunchMinutes = flexCalculationService.calculateLunchMinutes(timeEntry);
+        int extraLunchMinutes = flexCalculationService.calculateExtraLunchMinutes(
+                lunchMinutes,
+                schedule.getPaidLunchMinutes()
+        );
+        int workedMinutes = flexCalculationService.calculateWorkedMinutes(
+                timeEntry.getCheckInTime(),
+                timeEntry.getCheckOutTime(),
+                lunchMinutes
+        );
+        int flexMinutes = flexCalculationService.calculateFlexMinutes(schedule, timeEntry);
+
+        timeEntry.setLunchMinutes(lunchMinutes);
+        timeEntry.setExtraLunchMinutes(extraLunchMinutes);
+        timeEntry.setWorkedMinutes(workedMinutes);
+        timeEntry.setFlexMinutes(flexMinutes);
+
     }
 
     private TimeEntry getTodayEntryEntity(Long userId) {

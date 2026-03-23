@@ -1,6 +1,7 @@
 package com.example.flexapp.controller;
 
 import com.example.flexapp.dto.FlexBalanceResponse;
+import com.example.flexapp.dto.ManualTimeEntryRequest;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.service.TimeEntryService;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,12 @@ public class TimeEntryController {
     @PostMapping("/{userId}/check-out")
     public TimeEntryResponse checkOut(@PathVariable Long userId) {
         return timeEntryService.checkOut(userId);
+    }
+
+    @PostMapping("/{userId}/manual")
+    public TimeEntryResponse registerManualEntry(@PathVariable Long userId,
+                                                 @RequestBody ManualTimeEntryRequest request) {
+        return timeEntryService.registerManualEntry(userId, request);
     }
 
     @GetMapping("/{userId}/today")
