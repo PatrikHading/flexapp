@@ -4,7 +4,6 @@ import { fetchUserSchedule } from "../services/auth";
 const formatTime = (time) => {
     if (!time) return "-";
 
-    // Om format "HH:mm:ss" → ta bara HH:mm
     if (typeof time === "string" && time.includes(":")) {
         return time.slice(0, 5);
     }
@@ -24,7 +23,6 @@ function SchedulePage({ user }) {
                 setError("");
 
                 const data = await fetchUserSchedule(user.id);
-                console.log("Schedule response:", data);
                 setSchedule(Array.isArray(data) ? data[0] : data);
             } catch (err) {
                 setError(err.message);
@@ -40,121 +38,85 @@ function SchedulePage({ user }) {
 
     if (loading) {
         return (
-            <div style={styles.card}>
-                <h1>Mitt schema</h1>
-                <p>Laddar schema...</p>
+            <div className="app-card">
+                <h1>Schema</h1>
+                <p className="app-card-subtitle">Laddar schema...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div style={styles.card}>
-                <h1>Mitt schema</h1>
-                <p style={styles.error}>{error}</p>
+            <div className="app-card">
+                <h1>Schema</h1>
+                <p className="app-message-error">{error}</p>
             </div>
         );
     }
 
     if (!schedule) {
         return (
-            <div style={styles.card}>
-                <h1>Mitt schema</h1>
-                <p>Det finns inget schema registrerat för dig ännu.</p>
+            <div className="app-card">
+                <h1>Schema</h1>
+                <p className="app-card-subtitle">
+                    Det finns inget schema registrerat för dig ännu.
+                </p>
             </div>
         );
     }
 
     return (
-        <div style={styles.wrapper}>
-            <div style={styles.card}>
-                <h1>Mitt schema</h1>
-                <p style={styles.subtitle}>
+        <div className="page-section">
+            <section className="app-card-hero">
+                <h1 className="app-card-title">Mitt schema</h1>
+                <p className="app-card-subtitle">
                     Här ser du ditt registrerade arbetsschema.
                 </p>
+            </section>
 
-                <div style={styles.grid}>
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Starttid</span>
-                        <span style={styles.value}>{formatTime(schedule.plannedStartTime)}</span>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Sluttid</span>
-                        <span style={styles.value}>{formatTime(schedule.plannedEndTime)}</span>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Arbetstid (minuter)</span>
-                        <span style={styles.value}>
-              {schedule.expectedWorkMinutes ?? "-"}
+            <section className="app-card">
+                <div className="app-grid">
+                    <div className="app-info-box">
+                        <span className="app-label">Starttid</span>
+                        <span className="app-value">
+              {formatTime(schedule.plannedStartTime)}
             </span>
                     </div>
 
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Betald lunch (minuter)</span>
-                        <span style={styles.value}>
-              {schedule.paidLunchMinutes ?? "-"}
+                    <div className="app-info-box">
+                        <span className="app-label">Sluttid</span>
+                        <span className="app-value">
+              {formatTime(schedule.plannedEndTime)}
             </span>
                     </div>
 
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Datum</span>
-                        <span style={styles.value}>{schedule.workDate || "-"}</span>
+                    <div className="app-info-box">
+                        <span className="app-label">Arbetstid</span>
+                        <span className="app-value">
+              {schedule.expectedWorkMinutes ?? "-"} min
+            </span>
                     </div>
 
-                    <div style={styles.infoItem}>
-                        <span style={styles.label}>Schema-ID</span>
-                        <span style={styles.value}>{schedule.id || "-"}</span>
+                    <div className="app-info-box">
+                        <span className="app-label">Betald lunch</span>
+                        <span className="app-value">
+              {schedule.paidLunchMinutes ?? "-"} min
+            </span>
+                    </div>
+
+                    <div className="app-info-box">
+                        <span className="app-label">Datum</span>
+                        <span className="app-value">{schedule.workDate || "-"}</span>
+                    </div>
+
+                    <div className="app-info-box">
+                        <span className="app-label">Schema-ID</span>
+                        <span className="app-value">{schedule.id || "-"}</span>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
-
-const styles = {
-    wrapper: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-    },
-    card: {
-        background: "#fff",
-        padding: "24px",
-        borderRadius: "12px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-    },
-    subtitle: {
-        marginTop: "8px",
-        color: "#555",
-    },
-    grid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "16px",
-        marginTop: "24px",
-    },
-    infoItem: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        padding: "14px",
-        borderRadius: "10px",
-        background: "#f7f7f7",
-    },
-    label: {
-        fontSize: "13px",
-        color: "#666",
-        fontWeight: "600",
-    },
-    value: {
-        fontSize: "16px",
-        color: "#111",
-    },
-    error: {
-        color: "crimson",
-    },
-};
 
 export default SchedulePage;

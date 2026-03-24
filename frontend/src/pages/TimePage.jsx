@@ -59,26 +59,30 @@ function TimePage({ user }) {
 
     if (loading) {
         return (
-            <div style={styles.card}>
+            <div className="app-card">
                 <h1>Tidrapportering</h1>
-                <p>Laddar dagens tidrapport...</p>
+                <p className="app-card-subtitle">Laddar dagens tidrapport...</p>
             </div>
         );
     }
 
     return (
-        <div style={styles.wrapper}>
-            <div style={styles.card}>
-                <h1>Tidrapportering</h1>
-                <p style={styles.subtitle}>
-                    Här kan du registrera dagens arbetstid.
+        <div className="page-section">
+            <section className="app-card-hero">
+                <h1 className="app-card-title">Tidrapportering</h1>
+                <p className="app-card-subtitle">
+                    Registrera dagens arbetstid och följ status i realtid.
                 </p>
+            </section>
 
-                {error && <p style={styles.error}>{error}</p>}
+            <section className="app-card">
+                <h2>Åtgärder</h2>
 
-                <div style={styles.buttonRow}>
+                {error && <p className="app-message-error">{error}</p>}
+
+                <div className="app-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
                     <button
-                        style={styles.button}
+                        className="app-button"
                         onClick={() => handleAction("check-in")}
                         disabled={actionLoading !== ""}
                     >
@@ -86,7 +90,7 @@ function TimePage({ user }) {
                     </button>
 
                     <button
-                        style={styles.button}
+                        className="app-button"
                         onClick={() => handleAction("lunch-out")}
                         disabled={actionLoading !== ""}
                     >
@@ -94,7 +98,7 @@ function TimePage({ user }) {
                     </button>
 
                     <button
-                        style={styles.button}
+                        className="app-button"
                         onClick={() => handleAction("lunch-in")}
                         disabled={actionLoading !== ""}
                     >
@@ -102,140 +106,82 @@ function TimePage({ user }) {
                     </button>
 
                     <button
-                        style={styles.button}
+                        className="app-button"
                         onClick={() => handleAction("check-out")}
                         disabled={actionLoading !== ""}
                     >
                         {actionLoading === "check-out" ? "Sparar..." : "Checka ut"}
                     </button>
                 </div>
-            </div>
+            </section>
 
-            <div style={styles.card}>
+            <section className="app-card">
                 <h2>Dagens status</h2>
 
                 {!timeEntry ? (
-                    <p>Ingen tidrapport finns registrerad för idag ännu.</p>
+                    <p className="app-card-subtitle">
+                        Ingen tidrapport finns registrerad för idag ännu.
+                    </p>
                 ) : (
-                    <div style={styles.grid}>
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Datum</span>
-                            <span style={styles.value}>{timeEntry.workDate || "-"}</span>
+                    <div className="app-grid">
+                        <div className="app-info-box">
+                            <span className="app-label">Datum</span>
+                            <span className="app-value">{timeEntry.workDate || "-"}</span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Check-in</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Check-in</span>
+                            <span className="app-value">
                 {formatDateTime(timeEntry.checkInTime)}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Lunch ut</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Lunch ut</span>
+                            <span className="app-value">
                 {formatDateTime(timeEntry.lunchOutTime)}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Lunch in</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Lunch in</span>
+                            <span className="app-value">
                 {formatDateTime(timeEntry.lunchInTime)}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Check-out</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Check-out</span>
+                            <span className="app-value">
                 {formatDateTime(timeEntry.checkOutTime)}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Arbetade minuter</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Arbetade minuter</span>
+                            <span className="app-value">
                 {timeEntry.workedMinutes ?? "-"}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Lunchminuter</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Lunchminuter</span>
+                            <span className="app-value">
                 {timeEntry.lunchMinutes ?? "-"}
               </span>
                         </div>
 
-                        <div style={styles.infoItem}>
-                            <span style={styles.label}>Flex minuter</span>
-                            <span style={styles.value}>
+                        <div className="app-info-box">
+                            <span className="app-label">Flex minuter</span>
+                            <span className="app-value">
                 {timeEntry.flexMinutes ?? "-"}
               </span>
                         </div>
                     </div>
                 )}
-            </div>
+            </section>
         </div>
     );
 }
-
-const styles = {
-    wrapper: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-    },
-    card: {
-        background: "#fff",
-        padding: "24px",
-        borderRadius: "12px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-    },
-    subtitle: {
-        marginTop: "8px",
-        color: "#555",
-    },
-    buttonRow: {
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        marginTop: "20px",
-    },
-    button: {
-        padding: "12px 16px",
-        fontSize: "15px",
-        borderRadius: "8px",
-        border: "none",
-        cursor: "pointer",
-        background: "#222",
-        color: "#fff",
-    },
-    grid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "16px",
-        marginTop: "20px",
-    },
-    infoItem: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        padding: "14px",
-        borderRadius: "10px",
-        background: "#f7f7f7",
-    },
-    label: {
-        fontSize: "13px",
-        color: "#666",
-        fontWeight: "600",
-    },
-    value: {
-        fontSize: "16px",
-        color: "#111",
-    },
-    error: {
-        color: "crimson",
-        marginTop: "16px",
-    },
-};
 
 export default TimePage;

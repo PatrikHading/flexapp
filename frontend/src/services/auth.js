@@ -207,3 +207,59 @@ export const changePassword = async (currentPassword, newPassword) => {
 
     return true;
 };
+
+export const fetchFlexBalance = async (userId) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/flex-balance`, {
+        method: "GET",
+        headers: {
+            Authorization: authHeader,
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        throw new Error("Kunde inte hämta flexsaldo.");
+    }
+
+    return await response.json();
+};
+
+export const fetchAllUsers = async () => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        method: "GET",
+        headers: {
+            Authorization: authHeader,
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att se användare.");
+        }
+
+        throw new Error("Kunde inte hämta användarlistan.");
+    }
+
+    return await response.json();
+};

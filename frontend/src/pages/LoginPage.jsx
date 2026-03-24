@@ -18,7 +18,7 @@ function LoginPage({ setUser }) {
         try {
             const loggedInUser = await loginUser(email, password);
             setUser(loggedInUser);
-            navigate("/");
+            navigate("/dashboard");
         } catch (err) {
             setError(err.message);
         } finally {
@@ -27,81 +27,64 @@ function LoginPage({ setUser }) {
     };
 
     return (
-        <div style={styles.page}>
-            <div style={styles.card}>
-                <h1>Logga in</h1>
+        <div className="login-page">
+            <div className="login-layout">
+                <section className="login-brand-panel">
+                    <div className="login-brand-content">
+                        <div className="login-brand-badge">FlexApp</div>
+                        <h1 className="login-brand-title">
+                            Arbetstid, schema och historik på ett ställe.
+                        </h1>
+                        <p className="login-brand-text">
+                            Ett internt verktyg för att registrera arbetstid, följa schema och
+                            hantera din profil på ett tydligt och enkelt sätt.
+                        </p>
+                    </div>
+                </section>
 
-                <form onSubmit={handleLogin} style={styles.form}>
-                    <input
-                        type="email"
-                        placeholder="E-post"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        style={styles.input}
-                        required
-                    />
+                <section className="login-form-panel">
+                    <div className="login-card">
+                        <h2 className="login-card-title">Logga in</h2>
+                        <p className="login-card-subtitle">
+                            Logga in med din e-post och ditt lösenord.
+                        </p>
 
-                    <input
-                        type="password"
-                        placeholder="Lösenord"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={styles.input}
-                        required
-                    />
+                        <form onSubmit={handleLogin} className="login-form">
+                            <div className="login-field">
+                                <label className="login-label">E-post</label>
+                                <input
+                                    className="app-input"
+                                    type="email"
+                                    placeholder="namn@exempel.se"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
 
-                    <button type="submit" style={styles.button} disabled={loading}>
-                        {loading ? "Loggar in..." : "Logga in"}
-                    </button>
-                </form>
+                            <div className="login-field">
+                                <label className="login-label">Lösenord</label>
+                                <input
+                                    className="app-input"
+                                    type="password"
+                                    placeholder="Ditt lösenord"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
 
-                {error && <p style={styles.error}>{error}</p>}
+                            <button className="app-button login-button" type="submit" disabled={loading}>
+                                {loading ? "Loggar in..." : "Logga in"}
+                            </button>
+                        </form>
+
+                        {error && <p className="app-message-error">{error}</p>}
+                    </div>
+                </section>
             </div>
         </div>
     );
 }
-
-const styles = {
-    page: {
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "20px",
-    },
-    card: {
-        width: "100%",
-        maxWidth: "420px",
-        background: "#fff",
-        padding: "24px",
-        borderRadius: "12px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-    },
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        marginTop: "16px",
-    },
-    input: {
-        padding: "12px",
-        fontSize: "16px",
-        borderRadius: "8px",
-        border: "1px solid #ccc",
-    },
-    button: {
-        padding: "12px",
-        fontSize: "16px",
-        borderRadius: "8px",
-        border: "none",
-        cursor: "pointer",
-        background: "#222",
-        color: "#fff",
-    },
-    error: {
-        color: "crimson",
-        marginTop: "12px",
-    },
-};
 
 export default LoginPage;
