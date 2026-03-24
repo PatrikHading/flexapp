@@ -23,19 +23,19 @@ public class User implements UserDetails{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name= "first name", nullable = false, length = 100)
+    @Column(name= "first_name", nullable = false, length = 100)
     private String firstName;
 
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "email", nullable = false, length = 150)
+    @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private Role role;
 
@@ -43,7 +43,7 @@ public class User implements UserDetails{
     private LocalDateTime createdAt;
 
     @Column(name = "active", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     public void prePersist(){
