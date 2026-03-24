@@ -39,52 +39,43 @@ Spring Boot REST API
 
 ## Features
 
-### Time Tracking
+- User authentication (HTTP Basic)
+- Role-based authorization
 - Check in / Check out
-- Lunch tracking (out/in)
+- Lunch tracking
 - Manual time entries
-- Daily worked minutes calculation
+- Flexible work schedules
 - Flex balance calculation
-
-### Scheduling
-- Planned work schedules per user
-- Schedule storage and updates
-
-### User Management
-- User authentication
-- Role-based authorization (`ADMIN` / `USER`)
-- Password change
-- Admin access to all users
-
-### Frontend Application
-- React SPA with routing
-- Login with HTTP Basic Auth
-- Persistent session via LocalStorage
-- Protected routes
-- Dashboard and navigation
-- Profile page
-- Placeholder pages for upcoming features
+- Time history view
+- User profile page
+- Password change functionality
+- Admin management of employees
+- Web frontend built with React
 
 ---
 
 ## Current Status
 
 **Backend:**
-- ✔ Spring Boot project initialized
-- ✔ PostgreSQL connection configured
-- ✔ Domain model implemented (User, Schedule, TimeEntry)
+- ✔ Spring Boot backend fully implemented
+- ✔ PostgreSQL persistence configured
+- ✔ Spring Security with Basic Auth enabled
+- ✔ Role-based access control implemented
+- ✔ Work schedule management implemented
 - ✔ Full time tracking flow implemented
+- ✔ Manual time registration supported
 - ✔ Flex balance calculation implemented
-- ✔ Security and role-based access implemented
-- ✔ Global exception handling implemented
+- ✔ User profile management implemented
+- ✔ Password change endpoint implemented
 
 **Frontend:**
-- ✔ React application created with Vite
-- ✔ Login functionality implemented
-- ✔ Persistent authentication
-- ✔ Protected routes
-- ✔ Layout with navigation
-- ✔ Dashboard + placeholder pages
+- ✔ React frontend created with Vite
+- ✔ Frontend login integrated with backend
+- ✔ Protected routes implemented in frontend
+- ✔ Schedule page connected to backend
+- ✔ Time registration page connected to backend
+- ✔ History page connected to backend
+- ✔ Profile page with password change implemented
 
 ---
 
@@ -128,9 +119,32 @@ Frontend runs at: `http://localhost:5173`
 
 ---
 
+## Frontend Setup
+
+The project includes a React frontend located in the `/frontend` directory.
+
+### Install dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+### Run the frontend
+
+```bash
+npm run dev
+```
+
+Frontend will be available at: `http://localhost:5173`
+
+The frontend communicates with the backend at: `http://localhost:8080`
+
+---
+
 ## Authentication
 
-The API uses Spring Security with HTTP Basic authentication.
+The API uses Spring Security with HTTP Basic authentication. The React frontend stores the Basic Auth header locally and sends it with each request.
 
 ### Test Users
 
@@ -184,7 +198,7 @@ PUT /api/users/me/password
 
 ```
 flexapp/
-├── src/
+├── backend/          # Spring Boot application
 └── frontend/
     └── src/
         ├── components/
