@@ -1,58 +1,90 @@
-# FlexApp 
+# FlexApp
 
-> Web-based flex time tracking — built with Java Spring Boot & PostgreSQL.
+> Web-based flex time tracking system — built with Java Spring Boot, PostgreSQL, and React.
+
+---
+
+## Overview
+
+FlexApp is a full-stack web application for tracking working hours, flexible schedules, and flex balance. The system supports both employees and administrators and provides secure time tracking with role-based access control.
+
+---
+
+## Architecture
+
+```
+Frontend (React + Vite)
+        │
+        ▼
+Spring Boot REST API
+        │
+        ▼
+  PostgreSQL Database
+```
 
 ---
 
 ## Tech Stack
 
-```
-Layer          Technology
-─────────────────────────────────────
-Language       Java 21+
-Framework      Spring Boot
-Persistence    Spring Data JPA
-Database       PostgreSQL
-Security       Spring Security 
-Frontend       React 
-```
+| Layer       | Technology                          |
+|-------------|-------------------------------------|
+| Backend     | Spring Boot (Java 21+)              |
+| Persistence | Spring Data JPA / Hibernate         |
+| Database    | PostgreSQL                          |
+| Security    | Spring Security (HTTP Basic)        |
+| Frontend    | React + Vite                        |
+| Build Tool  | Maven + npm                         |
 
 ---
 
 ## Features
 
-```
-Check in / Check out
-Lunch tracking
-Flexible work schedules
-Flex balance calculation
-Manual time entries
-Admin management of employees
-User authentication and roles
-```
+### Time Tracking
+- Check in / Check out
+- Lunch tracking (out/in)
+- Manual time entries
+- Daily worked minutes calculation
+- Flex balance calculation
+
+### Scheduling
+- Planned work schedules per user
+- Schedule storage and updates
+
+### User Management
+- User authentication
+- Role-based authorization (`ADMIN` / `USER`)
+- Password change
+- Admin access to all users
+
+### Frontend Application
+- React SPA with routing
+- Login with HTTP Basic Auth
+- Persistent session via LocalStorage
+- Protected routes
+- Dashboard and navigation
+- Profile page
+- Placeholder pages for upcoming features
 
 ---
 
 ## Current Status
 
-```
-Spring Boot project initialized
-PostgreSQL connection configured
-User entity and role enum created
-User repository verified with startup test data
-Initial domain model created for users, work schedules, and time entries
-Work schedules can now be stored and updated for users
-Planned work schedules can be stored
-Initial check-in logic is implemented and persisted to the database
-Initial time tracking flow now supports check-in, lunch-out and lunch-in
-Initial time tracking flow now supports check-in, lunch-out, lunch-in and check-out
-Worked minutes and lunch minutes are now calculated and stored in the database
-Flex balance calculation is now implemented
-Spring Security implemented for protected endpoints
-Global exception handling implemented for all endpoints
-Total flex balance is calculated from stored daily time entries
-User can now change their password
-```
+**Backend:**
+- ✔ Spring Boot project initialized
+- ✔ PostgreSQL connection configured
+- ✔ Domain model implemented (User, Schedule, TimeEntry)
+- ✔ Full time tracking flow implemented
+- ✔ Flex balance calculation implemented
+- ✔ Security and role-based access implemented
+- ✔ Global exception handling implemented
+
+**Frontend:**
+- ✔ React application created with Vite
+- ✔ Login functionality implemented
+- ✔ Persistent authentication
+- ✔ Protected routes
+- ✔ Layout with navigation
+- ✔ Dashboard + placeholder pages
 
 ---
 
@@ -66,58 +98,108 @@ CREATE DATABASE flexapp;
 
 ### 2. Configure environment variables
 
-```env
+```
 DB_URL=jdbc:postgresql://localhost:5432/flexapp
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 ```
 
-### 3. Run the application
+### 3. Run Backend
+
+From the project root:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-The application starts at:
+Backend runs at: `http://localhost:8080`
 
+### 4. Run Frontend
+
+Navigate to the frontend directory:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
-http://localhost:8080
-```
+
+Frontend runs at: `http://localhost:5173`
+
+---
 
 ## Authentication
-The API now uses Spring Security with HTTP Basic authentication for protected endpoints.
+
+The API uses Spring Security with HTTP Basic authentication.
+
+### Test Users
+
+| Role  | Email               | Password  |
+|-------|---------------------|-----------|
+| Admin | admin@flexapp.com   | temp123   |
+| User  | user@flexapp.com    | temp123   |
+
+### Authorization
+
+| Role  | Access                                     |
+|-------|--------------------------------------------|
+| USER  | Own schedules and time entries only        |
+| ADMIN | All users' data                            |
+
+---
+
+## API Overview
+
+### Time Tracking
+
 ```
-Current test user:
-email: `admin@flexapp.com`
-password: `temp123`
+POST /api/time/{userId}/check-in
+POST /api/time/{userId}/lunch-out
+POST /api/time/{userId}/lunch-in
+POST /api/time/{userId}/check-out
+POST /api/time/{userId}/manual
+
+GET  /api/time/{userId}/today
+GET  /api/time/{userId}/history
+GET  /api/time/{userId}/flex-balance
 ```
 
-## Authorization
+### Schedules
+
 ```
-User can only access their own schedules and time entries
-Admin can access all users' schedules and time entries
+GET  /api/schedules/{userId}
+POST /api/schedules/{userId}
 ```
 
-## Current API
-```bash
-POST `/api/time/{userId}/check-in`
-POST `/api/time/{userId}/lunch-out`
-POST `/api/time/{userId}/lunch-in`
-POST `/api/time/{userId}/check-out}`
-GET `/api/time/{userId}/today`
-GET `/api/time/{userId}/history`
-GET `/api/time/{userId}/flex-balance`
-POST `/api/schedules/{userId}`
-POST `/api/schedules/{userId}`
-GET `/api/schedules/{userId}`
-POST `/api/time/{userId}/manual`
-GET `/api/users/me`
-PUT `/api/users/me/password`
+### User
+
 ```
+GET /api/users/me
+PUT /api/users/me/password
+```
+
+---
+
+## Project Structure
+
+```
+flexapp/
+├── src/
+└── frontend/
+    └── src/
+        ├── components/
+        ├── pages/
+        └── services/
+```
+
+---
+
+## Security Notes
+
+Authentication uses HTTP Basic Auth. The frontend stores the `Authorization` header under the key `authHeader` in LocalStorage, which is then included in all API requests.
+
 ---
 
 ## License
 
-```
 Private project — all rights reserved.
-```
