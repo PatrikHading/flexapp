@@ -51,6 +51,7 @@ Flex balance calculation is now implemented
 Spring Security implemented for protected endpoints
 Global exception handling implemented for all endpoints
 Total flex balance is calculated from stored daily time entries
+User can now change their password
 ```
 
 ---
@@ -110,6 +111,8 @@ POST `/api/schedules/{userId}`
 POST `/api/schedules/{userId}`
 GET `/api/schedules/{userId}`
 POST `/api/time/{userId}/manual`
+GET `/api/users/me`
+PUT `/api/users/me/password`
 ```
 ---
 
