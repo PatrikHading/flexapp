@@ -1,6 +1,7 @@
 package com.example.flexapp.service;
 
 import com.example.flexapp.dto.ChangePasswordRequest;
+import com.example.flexapp.dto.UpdateProfileRequest;
 import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.entity.User;
 import com.example.flexapp.exception.BadRequestException;
@@ -29,6 +30,26 @@ public class UserService {
         return toProfileResponse(currentUser);
     }
 
+    public UserProfileResponse updateCurrentUserProfile(UpdateProfileRequest request) {
+        User currentUser = securityService.getCurrentUser();
+
+        validateProfileRequest(request);
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        if (!currentUser.getEmail().equalsIgnoreCase(normalizedEmail)
+                && userRepository.existsByEmail(normalizedEmail)) {
+            throw new BadRequestException("Email is already in use.");
+        }
+
+        currentUser.setFirstName(request.getFirstName().trim());
+        currentUser.setLastName(request.getLastName().trim());
+        currentUser.setEmail(normalizedEmail);
+
+        User savedUser = userRepository.save(currentUser);
+        return toProfileResponse(savedUser);
+    }
+
     public void changePassword(ChangePasswordRequest request) {
         User currentUser = securityService.getCurrentUser();
 
@@ -54,7 +75,24 @@ public class UserService {
 
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
+    }
 
+    private void validateProfileRequest(UpdateProfileRequest request) {
+        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
+            throw new BadRequestException("First name is required.");
+        }
+
+        if (request.getLastName() == null || request.getLastName().isBlank()) {
+            throw new BadRequestException("Last name is required.");
+        }
+
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new BadRequestException("Email is required.");
+        }
+
+        if (!request.getEmail().contains("@")) {
+            throw new BadRequestException("Email must be valid.");
+        }
     }
 
     private UserProfileResponse toProfileResponse(User user) {
@@ -67,5 +105,4 @@ public class UserService {
                 user.isActive()
         );
     }
-
 }

@@ -263,3 +263,83 @@ export const fetchAllUsers = async () => {
 
     return await response.json();
 };
+
+export const updateMyProfile = async ({ firstName, lastName, email }) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte uppdatera profilen.");
+    }
+
+    return await response.json();
+};
+
+export const createUserAsAdmin = async ({
+                                            firstName,
+                                            lastName,
+                                            email,
+                                            password,
+                                            role,
+                                            active,
+                                        }) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            password,
+            role,
+            active,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att skapa användare.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte skapa användaren.");
+    }
+
+    return await response.json();
+};

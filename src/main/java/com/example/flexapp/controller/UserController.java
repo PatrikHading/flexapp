@@ -1,6 +1,7 @@
 package com.example.flexapp.controller;
 
 import com.example.flexapp.dto.ChangePasswordRequest;
+import com.example.flexapp.dto.UpdateProfileRequest;
 import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,11 @@ public class UserController {
     @GetMapping("/me")
     public UserProfileResponse getMyProfile() {
         return userService.getCurrentUserProfile();
+    }
+
+    @PutMapping("/me")
+    public UserProfileResponse updateMyProfile(@RequestBody UpdateProfileRequest request) {
+        return userService.updateCurrentUserProfile(request);
     }
 
     @PutMapping("/me/password")

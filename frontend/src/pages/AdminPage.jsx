@@ -1,26 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchAllUsers } from "../services/auth";
+import { fetchAllUsers, createUserAsAdmin } from "../services/auth";
 
 function AdminPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [role, setRole] = useState("USER");
+    const [active, setActive] = useState(true);
+
+    const [createLoading, setCreateLoading] = useState(false);
+    const [createError, setCreateError] = useState("");
+    const [createSuccess, setCreateSuccess] = useState("");
+
+    const loadUsers = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const data = await fetchAllUsers();
+            setUsers(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadUsers = async () => {
-            try {
-                setLoading(true);
-                setError("");
-
-                const data = await fetchAllUsers();
-                setUsers(Array.isArray(data) ? data : []);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadUsers();
     }, []);
 
@@ -37,6 +48,45 @@ function AdminPage() {
             activeCount,
         };
     }, [users]);
+
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+        setCreateError("");
+        setCreateSuccess("");
+
+        if (password.length < 6) {
+            setCreateError("Lösenordet måste vara minst 6 tecken.");
+            return;
+        }
+
+        try {
+            setCreateLoading(true);
+
+            const createdUser = await createUserAsAdmin({
+                firstName,
+                lastName,
+                email,
+                password,
+                role,
+                active,
+            });
+
+            setUsers((prevUsers) => [createdUser, ...prevUsers]);
+
+            setFirstName("");
+            setLastName("");
+            setEmail("");
+            setPassword("");
+            setRole("USER");
+            setActive(true);
+
+            setCreateSuccess("Användaren har skapats.");
+        } catch (err) {
+            setCreateError(err.message);
+        } finally {
+            setCreateLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -61,8 +111,95 @@ function AdminPage() {
             <section className="app-card-hero">
                 <h1 className="app-card-title">Admin</h1>
                 <p className="app-card-subtitle">
-                    Här kan du se en översikt av användarna i systemet.
+                    Här kan du skapa användare och se en översikt av systemets konton.
                 </p>
+            </section>
+
+            <section className="app-card">
+                <h2>Skapa användare</h2>
+                <p className="app-card-subtitle">
+                    Lägg till en ny användare i systemet.
+                </p>
+
+                <form className="profile-form" onSubmit={handleCreateUser}>
+                    <div className="profile-form-grid">
+                        <div>
+                            <label className="app-label">Förnamn</label>
+                            <input
+                                className="app-input"
+                                type="text"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Efternamn</label>
+                            <input
+                                className="app-input"
+                                type="text"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="profile-form-full">
+                            <label className="app-label">E-post</label>
+                            <input
+                                className="app-input"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Lösenord</label>
+                            <input
+                                className="app-input"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Roll</label>
+                            <select
+                                className="app-input"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                            >
+                                <option value="USER">USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </div>
+
+                        <div className="profile-form-full">
+                            <label className="admin-checkbox-row">
+                                <input
+                                    type="checkbox"
+                                    checked={active}
+                                    onChange={(e) => setActive(e.target.checked)}
+                                />
+                                <span>Aktivt konto</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="profile-form-actions">
+                        <button className="app-button" type="submit" disabled={createLoading}>
+                            {createLoading ? "Skapar..." : "Skapa användare"}
+                        </button>
+                    </div>
+
+                    {createError && <p className="app-message-error">{createError}</p>}
+                    {createSuccess && <p className="app-message-success">{createSuccess}</p>}
+                </form>
             </section>
 
             <section className="app-grid">

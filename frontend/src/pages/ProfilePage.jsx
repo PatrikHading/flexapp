@@ -1,38 +1,79 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { changePassword, clearAuthHeader } from "../services/auth";
+import {
+    changePassword,
+    clearAuthHeader,
+    updateMyProfile,
+} from "../services/auth";
 
 function ProfilePage({ user, setUser }) {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileError, setProfileError] = useState("");
+    const [profileSuccess, setProfileSuccess] = useState("");
+
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [successMessage, setSuccessMessage] = useState("");
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
+    const [passwordSuccess, setPasswordSuccess] = useState("");
 
     const navigate = useNavigate();
 
+    useEffect(() => {
+        setFirstName(user?.firstName || "");
+        setLastName(user?.lastName || "");
+        setEmail(user?.email || "");
+    }, [user]);
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setProfileError("");
+        setProfileSuccess("");
+
+        try {
+            setProfileLoading(true);
+
+            const updatedUser = await updateMyProfile({
+                firstName,
+                lastName,
+                email,
+            });
+
+            setUser(updatedUser);
+            setProfileSuccess("Profilen har uppdaterats.");
+        } catch (err) {
+            setProfileError(err.message);
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
     const handleChangePassword = async (e) => {
         e.preventDefault();
-        setError("");
-        setSuccessMessage("");
+        setPasswordError("");
+        setPasswordSuccess("");
 
         if (newPassword !== confirmPassword) {
-            setError("Det nya lösenordet och bekräftelsen matchar inte.");
+            setPasswordError("Det nya lösenordet och bekräftelsen matchar inte.");
             return;
         }
 
         if (newPassword.length < 6) {
-            setError("Det nya lösenordet måste vara minst 6 tecken.");
+            setPasswordError("Det nya lösenordet måste vara minst 6 tecken.");
             return;
         }
 
         try {
-            setLoading(true);
+            setPasswordLoading(true);
 
             await changePassword(currentPassword, newPassword);
 
-            setSuccessMessage("Lösenordet har uppdaterats. Du behöver logga in igen.");
+            setPasswordSuccess("Lösenordet har uppdaterats. Du behöver logga in igen.");
 
             setCurrentPassword("");
             setNewPassword("");
@@ -44,9 +85,9 @@ function ProfilePage({ user, setUser }) {
                 navigate("/login");
             }, 1500);
         } catch (err) {
-            setError(err.message);
+            setPasswordError(err.message);
         } finally {
-            setLoading(false);
+            setPasswordLoading(false);
         }
     };
 
@@ -55,46 +96,80 @@ function ProfilePage({ user, setUser }) {
             <section className="app-card-hero">
                 <h1 className="app-card-title">Min profil</h1>
                 <p className="app-card-subtitle">
-                    Se dina användaruppgifter och hantera ditt konto.
+                    Se och uppdatera dina användaruppgifter samt hantera ditt konto.
                 </p>
             </section>
 
             <section className="app-card">
                 <h2>Profiluppgifter</h2>
+                <p className="app-card-subtitle">
+                    Uppdatera ditt namn och din e-postadress.
+                </p>
 
-                <div className="app-grid">
-                    <div className="app-info-box">
-                        <span className="app-label">Förnamn</span>
-                        <span className="app-value">{user?.firstName || "-"}</span>
+                <form className="profile-form" onSubmit={handleProfileUpdate}>
+                    <div className="profile-form-grid">
+                        <div>
+                            <label className="app-label">Förnamn</label>
+                            <input
+                                className="app-input"
+                                type="text"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Efternamn</label>
+                            <input
+                                className="app-input"
+                                type="text"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="profile-form-full">
+                            <label className="app-label">E-post</label>
+                            <input
+                                className="app-input"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="app-info-box">
-                        <span className="app-label">Efternamn</span>
-                        <span className="app-value">{user?.lastName || "-"}</span>
+                    <div className="profile-meta-grid">
+                        <div className="app-info-box">
+                            <span className="app-label">Roll</span>
+                            <span className="app-value">{user?.role || "-"}</span>
+                        </div>
+
+                        <div className="app-info-box">
+                            <span className="app-label">Status</span>
+                            <span className="app-value">
+                {user?.active ? "Aktiv" : "Inaktiv"}
+              </span>
+                        </div>
+
+                        <div className="app-info-box">
+                            <span className="app-label">Användar-ID</span>
+                            <span className="app-value">{user?.id || "-"}</span>
+                        </div>
                     </div>
 
-                    <div className="app-info-box">
-                        <span className="app-label">E-post</span>
-                        <span className="app-value">{user?.email || "-"}</span>
+                    <div className="profile-form-actions">
+                        <button className="app-button" type="submit" disabled={profileLoading}>
+                            {profileLoading ? "Sparar..." : "Spara profil"}
+                        </button>
                     </div>
 
-                    <div className="app-info-box">
-                        <span className="app-label">Roll</span>
-                        <span className="app-value">{user?.role || "-"}</span>
-                    </div>
-
-                    <div className="app-info-box">
-                        <span className="app-label">Status</span>
-                        <span className="app-value">
-              {user?.active ? "Aktiv" : "Inaktiv"}
-            </span>
-                    </div>
-
-                    <div className="app-info-box">
-                        <span className="app-label">Användar-ID</span>
-                        <span className="app-value">{user?.id || "-"}</span>
-                    </div>
-                </div>
+                    {profileError && <p className="app-message-error">{profileError}</p>}
+                    {profileSuccess && <p className="app-message-success">{profileSuccess}</p>}
+                </form>
             </section>
 
             <section className="app-card">
@@ -103,50 +178,51 @@ function ProfilePage({ user, setUser }) {
                     Ange ditt nuvarande lösenord och välj ett nytt.
                 </p>
 
-                <form
-                    onSubmit={handleChangePassword}
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "12px",
-                        maxWidth: "460px",
-                        marginTop: "20px",
-                    }}
-                >
-                    <input
-                        className="app-input"
-                        type="password"
-                        placeholder="Nuvarande lösenord"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        required
-                    />
+                <form className="profile-form" onSubmit={handleChangePassword}>
+                    <div className="profile-form-grid">
+                        <div className="profile-form-full">
+                            <label className="app-label">Nuvarande lösenord</label>
+                            <input
+                                className="app-input"
+                                type="password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                    <input
-                        className="app-input"
-                        type="password"
-                        placeholder="Nytt lösenord"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                    />
+                        <div>
+                            <label className="app-label">Nytt lösenord</label>
+                            <input
+                                className="app-input"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                    <input
-                        className="app-input"
-                        type="password"
-                        placeholder="Bekräfta nytt lösenord"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                    />
+                        <div>
+                            <label className="app-label">Bekräfta nytt lösenord</label>
+                            <input
+                                className="app-input"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
 
-                    <button className="app-button" type="submit" disabled={loading}>
-                        {loading ? "Sparar..." : "Byt lösenord"}
-                    </button>
+                    <div className="profile-form-actions">
+                        <button className="app-button" type="submit" disabled={passwordLoading}>
+                            {passwordLoading ? "Sparar..." : "Byt lösenord"}
+                        </button>
+                    </div>
+
+                    {passwordError && <p className="app-message-error">{passwordError}</p>}
+                    {passwordSuccess && <p className="app-message-success">{passwordSuccess}</p>}
                 </form>
-
-                {error && <p className="app-message-error">{error}</p>}
-                {successMessage && <p className="app-message-success">{successMessage}</p>}
             </section>
         </div>
     );

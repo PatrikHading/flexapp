@@ -26,31 +26,30 @@ Spring Boot REST API
 
 ## Tech Stack
 
-| Layer       | Technology                          |
-|-------------|-------------------------------------|
-| Backend     | Spring Boot (Java 21+)              |
-| Persistence | Spring Data JPA / Hibernate         |
-| Database    | PostgreSQL                          |
-| Security    | Spring Security (HTTP Basic)        |
-| Frontend    | React + Vite                        |
-| Build Tool  | Maven + npm                         |
+| Layer       | Technology                   |
+|-------------|------------------------------|
+| Backend     | Spring Boot (Java 21+)       |
+| Persistence | Spring Data JPA / Hibernate  |
+| Database    | PostgreSQL                   |
+| Security    | Spring Security (HTTP Basic) |
+| Frontend    | React (Vite) + React Router  |
+| Build Tool  | Maven + npm                  |
 
 ---
 
 ## Features
 
-- User authentication (HTTP Basic)
-- Role-based authorization
 - Check in / Check out
 - Lunch tracking
-- Manual time entries
 - Flexible work schedules
 - Flex balance calculation
-- Time history view
-- User profile page
-- Password change functionality
+- Manual time entries (including retroactive entries)
+- User profile management
+- Password change
 - Admin management of employees
-- Web frontend built with React
+- Admin user creation
+- User authentication and roles
+- Role-based access control
 
 ---
 
@@ -59,14 +58,29 @@ Spring Boot REST API
 **Backend:**
 - ✔ Spring Boot backend fully implemented
 - ✔ PostgreSQL persistence configured
-- ✔ Spring Security with Basic Auth enabled
-- ✔ Role-based access control implemented
-- ✔ Work schedule management implemented
-- ✔ Full time tracking flow implemented
-- ✔ Manual time registration supported
-- ✔ Flex balance calculation implemented
-- ✔ User profile management implemented
-- ✔ Password change endpoint implemented
+- ✔ User authentication with Spring Security (HTTP Basic)
+- ✔ Role-based authorization (USER / ADMIN)
+- ✔ Work schedules with expected work time and paid lunch
+- ✔ Live time tracking (check-in, lunch-out, lunch-in, check-out)
+- ✔ Manual time entry for missed registrations
+- ✔ Historical time data retrieval
+- ✔ Flex balance calculation
+- ✔ User profile management
+- ✔ Password change functionality
+- ✔ Admin API for managing users
+- ✔ Admin can view all users
+- ✔ Admin can create new users
+- ✔ Global exception handling implemented
+- ✔ React frontend created using Vite
+- ✔ Login flow integrated with backend
+- ✔ Protected routes implemented
+- ✔ Dashboard with user overview
+- ✔ Schedule page
+- ✔ Time reporting page
+- ✔ History page
+- ✔ Profile page
+- ✔ Admin page with user list and creation form
+- ✔ Flex balance visible in frontend
 
 **Frontend:**
 - ✔ React frontend created with Vite
@@ -146,6 +160,19 @@ The frontend communicates with the backend at: `http://localhost:8080`
 
 The API uses Spring Security with HTTP Basic authentication. The React frontend stores the Basic Auth header locally and sends it with each request.
 
+Role-based access control is implemented:
+
+USER:
+- Can access own profile, schedules and time entries
+- Can update own profile information
+- Can change password
+- Can register work time manually
+
+ADMIN:
+- All USER permissions
+- Can view all users
+- Can create new users
+
 ### Test Users
 
 | Role  | Email               | Password  |
@@ -189,7 +216,15 @@ POST /api/schedules/{userId}
 
 ```
 GET /api/users/me
+PUT /api/users/me
 PUT /api/users/me/password
+```
+
+### Admin
+
+```
+GET /api/admin/users
+POST /api/admin/users
 ```
 
 ---
