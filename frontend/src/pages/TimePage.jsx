@@ -80,7 +80,7 @@ function TimePage({ user }) {
 
                 {error && <p className="app-message-error">{error}</p>}
 
-                <div className="app-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+                <div className="app-grid dashboard-action-grid">
                     <button
                         className="app-button"
                         onClick={() => handleAction("check-in")}

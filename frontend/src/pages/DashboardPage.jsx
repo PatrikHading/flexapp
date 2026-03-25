@@ -92,11 +92,51 @@ function DashboardPage({ user }) {
 
     return (
         <div className="page-section">
-            <section className="app-card-hero">
-                <h1 className="app-card-title">Välkommen tillbaka, {user?.firstName}</h1>
-                <p className="app-card-subtitle">
-                    Här ser du dagens status, schema och ditt aktuella flexsaldo.
-                </p>
+            <section className="app-card-hero dashboard-hero">
+                <div className="dashboard-hero-main">
+                    <h1 className="app-card-title">Välkommen tillbaka, {user?.firstName}</h1>
+                    <p className="app-card-subtitle">
+                        Här ser du dagens status, schema och ditt aktuella flexsaldo.
+                    </p>
+                </div>
+
+                <div className="dashboard-hero-actions">
+                    <div className="dashboard-hero-actions-title">Snabbåtgärder</div>
+
+                    <div className="dashboard-action-grid">
+                        <button
+                            className="app-button"
+                            onClick={() => handleAction("check-in")}
+                            disabled={actionLoading !== ""}
+                        >
+                            {actionLoading === "check-in" ? "Sparar..." : "Checka in"}
+                        </button>
+
+                        <button
+                            className="app-button"
+                            onClick={() => handleAction("lunch-out")}
+                            disabled={actionLoading !== ""}
+                        >
+                            {actionLoading === "lunch-out" ? "Sparar..." : "Lunch ut"}
+                        </button>
+
+                        <button
+                            className="app-button"
+                            onClick={() => handleAction("lunch-in")}
+                            disabled={actionLoading !== ""}
+                        >
+                            {actionLoading === "lunch-in" ? "Sparar..." : "Lunch in"}
+                        </button>
+
+                        <button
+                            className="app-button"
+                            onClick={() => handleAction("check-out")}
+                            disabled={actionLoading !== ""}
+                        >
+                            {actionLoading === "check-out" ? "Sparar..." : "Checka ut"}
+                        </button>
+                    </div>
+                </div>
             </section>
 
             {error && (
@@ -162,50 +202,6 @@ function DashboardPage({ user }) {
               </span>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <section className="app-card">
-                <h2>Snabbåtgärder</h2>
-                <p className="app-card-subtitle">
-                    Registrera dagens arbetstid direkt från dashboarden.
-                </p>
-
-                <div
-                    className="app-grid"
-                    style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", marginTop: "20px" }}
-                >
-                    <button
-                        className="app-button"
-                        onClick={() => handleAction("check-in")}
-                        disabled={actionLoading !== ""}
-                    >
-                        {actionLoading === "check-in" ? "Sparar..." : "Checka in"}
-                    </button>
-
-                    <button
-                        className="app-button"
-                        onClick={() => handleAction("lunch-out")}
-                        disabled={actionLoading !== ""}
-                    >
-                        {actionLoading === "lunch-out" ? "Sparar..." : "Lunch ut"}
-                    </button>
-
-                    <button
-                        className="app-button"
-                        onClick={() => handleAction("lunch-in")}
-                        disabled={actionLoading !== ""}
-                    >
-                        {actionLoading === "lunch-in" ? "Sparar..." : "Lunch in"}
-                    </button>
-
-                    <button
-                        className="app-button"
-                        onClick={() => handleAction("check-out")}
-                        disabled={actionLoading !== ""}
-                    >
-                        {actionLoading === "check-out" ? "Sparar..." : "Checka ut"}
-                    </button>
                 </div>
             </section>
 

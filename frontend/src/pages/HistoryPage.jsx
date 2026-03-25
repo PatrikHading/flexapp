@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchTimeHistory } from "../services/auth";
 
 const formatDateTime = (value) => {
@@ -17,10 +17,18 @@ const formatDateTime = (value) => {
     }
 };
 
+const escapeCsvValue = (value) => {
+    if (value === null || value === undefined) return "";
+    const stringValue = String(value).replace(/"/g, '""');
+    return `"${stringValue}"`;
+};
+
 function HistoryPage({ user }) {
     const [historyEntries, setHistoryEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -42,6 +50,72 @@ function HistoryPage({ user }) {
         }
     }, [user]);
 
+    const filteredEntries = useMemo(() => {
+        return historyEntries.filter((entry) => {
+            const entryDate = entry.workDate;
+
+            if (!entryDate) {
+                return false;
+            }
+
+            if (fromDate && entryDate < fromDate) {
+                return false;
+            }
+
+            if (toDate && entryDate > toDate) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [historyEntries, fromDate, toDate]);
+
+    const handleExportCsv = () => {
+        if (filteredEntries.length === 0) {
+            return;
+        }
+
+        const headers = [
+            "Datum",
+            "Check-in",
+            "Lunch ut",
+            "Lunch in",
+            "Check-out",
+            "Arbetade minuter",
+            "Lunchminuter",
+            "Flex minuter",
+        ];
+
+        const rows = filteredEntries.map((entry) => [
+            entry.workDate ?? "",
+            formatDateTime(entry.checkInTime),
+            formatDateTime(entry.lunchOutTime),
+            formatDateTime(entry.lunchInTime),
+            formatDateTime(entry.checkOutTime),
+            entry.workedMinutes ?? "",
+            entry.lunchMinutes ?? "",
+            entry.flexMinutes ?? "",
+        ]);
+
+        const csvContent = [
+            headers.map(escapeCsvValue).join(";"),
+            ...rows.map((row) => row.map(escapeCsvValue).join(";")),
+        ].join("\n");
+
+        const blob = new Blob(["\uFEFF" + csvContent], {
+            type: "text/csv;charset=utf-8;",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `flexapp-historik-${user?.id}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     if (loading) {
         return (
             <div className="app-card">
@@ -60,82 +134,130 @@ function HistoryPage({ user }) {
         );
     }
 
-    if (historyEntries.length === 0) {
-        return (
-            <div className="app-card">
-                <h1>Historik</h1>
-                <p className="app-card-subtitle">
-                    Det finns ingen historik att visa ännu.
-                </p>
-            </div>
-        );
-    }
-
     return (
         <div className="page-section">
             <section className="app-card-hero">
-                <h1 className="app-card-title">Historik</h1>
-                <p className="app-card-subtitle">
-                    Här ser du dina tidigare tidrapporter.
-                </p>
+                <div className="history-hero-header">
+                    <div>
+                        <h1 className="app-card-title">Historik</h1>
+                        <p className="app-card-subtitle">
+                            Här ser du dina tidigare tidrapporter.
+                        </p>
+                    </div>
+
+                    <button
+                        className="app-button"
+                        onClick={handleExportCsv}
+                        disabled={filteredEntries.length === 0}
+                    >
+                        Exportera CSV
+                    </button>
+                </div>
             </section>
 
-            {historyEntries.map((entry) => (
-                <section key={entry.id} className="app-card">
-                    <h2>{entry.workDate || "Okänt datum"}</h2>
+            <section className="app-card">
+                <h2>Filter</h2>
 
-                    <div className="app-grid">
-                        <div className="app-info-box">
-                            <span className="app-label">Check-in</span>
-                            <span className="app-value">
-                {formatDateTime(entry.checkInTime)}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Lunch ut</span>
-                            <span className="app-value">
-                {formatDateTime(entry.lunchOutTime)}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Lunch in</span>
-                            <span className="app-value">
-                {formatDateTime(entry.lunchInTime)}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Check-out</span>
-                            <span className="app-value">
-                {formatDateTime(entry.checkOutTime)}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Arbetade minuter</span>
-                            <span className="app-value">
-                {entry.workedMinutes ?? "-"}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Lunchminuter</span>
-                            <span className="app-value">
-                {entry.lunchMinutes ?? "-"}
-              </span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Flex minuter</span>
-                            <span className="app-value">
-                {entry.flexMinutes ?? "-"}
-              </span>
-                        </div>
+                <div className="history-filter-grid">
+                    <div>
+                        <label className="app-label">Från datum</label>
+                        <input
+                            className="app-input"
+                            type="date"
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                        />
                     </div>
+
+                    <div>
+                        <label className="app-label">Till datum</label>
+                        <input
+                            className="app-input"
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="history-filter-actions">
+                        <button
+                            className="app-button history-clear-button"
+                            type="button"
+                            onClick={() => {
+                                setFromDate("");
+                                setToDate("");
+                            }}
+                        >
+                            Rensa filter
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {filteredEntries.length === 0 ? (
+                <section className="app-card">
+                    <p className="app-card-subtitle">
+                        Det finns ingen historik som matchar filtret.
+                    </p>
                 </section>
-            ))}
+            ) : (
+                filteredEntries.map((entry) => (
+                    <section key={entry.id} className="app-card">
+                        <h2>{entry.workDate || "Okänt datum"}</h2>
+
+                        <div className="app-grid">
+                            <div className="app-info-box">
+                                <span className="app-label">Check-in</span>
+                                <span className="app-value">
+                  {formatDateTime(entry.checkInTime)}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Lunch ut</span>
+                                <span className="app-value">
+                  {formatDateTime(entry.lunchOutTime)}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Lunch in</span>
+                                <span className="app-value">
+                  {formatDateTime(entry.lunchInTime)}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Check-out</span>
+                                <span className="app-value">
+                  {formatDateTime(entry.checkOutTime)}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Arbetade minuter</span>
+                                <span className="app-value">
+                  {entry.workedMinutes ?? "-"}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Lunchminuter</span>
+                                <span className="app-value">
+                  {entry.lunchMinutes ?? "-"}
+                </span>
+                            </div>
+
+                            <div className="app-info-box">
+                                <span className="app-label">Flex minuter</span>
+                                <span className="app-value">
+                  {entry.flexMinutes ?? "-"}
+                </span>
+                            </div>
+                        </div>
+                    </section>
+                ))
+            )}
         </div>
     );
 }

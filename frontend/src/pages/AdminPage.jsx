@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchAllUsers } from "../services/auth";
 
 function AdminPage() {
@@ -24,6 +24,20 @@ function AdminPage() {
         loadUsers();
     }, []);
 
+    const stats = useMemo(() => {
+        const totalUsers = users.length;
+        const adminCount = users.filter((user) => user.role === "ADMIN").length;
+        const regularUserCount = users.filter((user) => user.role === "USER").length;
+        const activeCount = users.filter((user) => user.active).length;
+
+        return {
+            totalUsers,
+            adminCount,
+            regularUserCount,
+            activeCount,
+        };
+    }, [users]);
+
     if (loading) {
         return (
             <div className="app-card">
@@ -47,8 +61,35 @@ function AdminPage() {
             <section className="app-card-hero">
                 <h1 className="app-card-title">Admin</h1>
                 <p className="app-card-subtitle">
-                    Här kan du se alla användare i systemet.
+                    Här kan du se en översikt av användarna i systemet.
                 </p>
+            </section>
+
+            <section className="app-grid">
+                <div className="app-card">
+                    <h2>Översikt</h2>
+                    <div className="app-grid">
+                        <div className="app-info-box">
+                            <span className="app-label">Totalt antal användare</span>
+                            <span className="app-value">{stats.totalUsers}</span>
+                        </div>
+
+                        <div className="app-info-box">
+                            <span className="app-label">Admins</span>
+                            <span className="app-value">{stats.adminCount}</span>
+                        </div>
+
+                        <div className="app-info-box">
+                            <span className="app-label">Vanliga användare</span>
+                            <span className="app-value">{stats.regularUserCount}</span>
+                        </div>
+
+                        <div className="app-info-box">
+                            <span className="app-label">Aktiva konton</span>
+                            <span className="app-value">{stats.activeCount}</span>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section className="app-card">
