@@ -459,3 +459,89 @@ export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
 
     return true;
 };
+
+export const saveUserScheduleAsAdmin = async (
+    userId,
+    { workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }
+) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            workDate,
+            plannedStartTime,
+            plannedEndTime,
+            paidLunchMinutes,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att spara schema.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte spara schema.");
+    }
+
+    return await response.json();
+};
+
+export const createRecurringSchedulesAsAdmin = async (
+    userId,
+    { startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }
+) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/admin/users/${userId}/schedules/recurring`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: authHeader,
+            },
+            body: JSON.stringify({
+                startDate,
+                endDate,
+                plannedStartTime,
+                plannedEndTime,
+                paidLunchMinutes,
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att skapa återkommande schema.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte skapa återkommande schema.");
+    }
+
+    return await response.json();
+};

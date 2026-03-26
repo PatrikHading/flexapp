@@ -1,5 +1,6 @@
 package com.example.flexapp.service;
 
+import com.example.flexapp.dto.RecurringWorkScheduleRequest;
 import com.example.flexapp.dto.WorkScheduleRequest;
 import com.example.flexapp.dto.WorkScheduleResponse;
 import com.example.flexapp.entity.User;
@@ -36,7 +37,7 @@ public class WorkScheduleService {
                                                Integer paidLunchMinutes) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         validateScheduleInput(plannedStartTime, plannedEndTime, paidLunchMinutes);
 
@@ -67,6 +68,31 @@ public class WorkScheduleService {
         );
 
         return toResponse(saved);
+    }
+
+    public List<WorkScheduleResponse> createRecurringSchedules(Long userId, RecurringWorkScheduleRequest request) {
+        securityService.validateUserAccess(userId);
+
+        validateRecurringScheduleRequest(request);
+
+        List<WorkScheduleResponse> responses = new java.util.ArrayList<>();
+
+        LocalDate currentDate = request.getStartDate();
+
+        while (!currentDate.isAfter(request.getEndDate())) {
+            if (isWeekday(currentDate)) {
+                WorkSchedule schedule = createOrUpdateSchedule(
+                        userId,
+                        currentDate,
+                        request.getPlannedStartTime(),
+                        request.getPlannedEndTime(),
+                        request.getPaidLunchMinutes()
+                );
+                responses.add(toResponse(schedule));
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+        return responses;
     }
 
     public WorkScheduleResponse getScheduleForDate(Long userId, LocalDate workDate) {
@@ -112,6 +138,27 @@ public class WorkScheduleService {
         if (paidLunchMinutes == null || paidLunchMinutes < 0) {
             throw new BadRequestException("Paid lunch minutes must be 0 or greater.");
         }
+    }
+
+    private void validateRecurringScheduleRequest(RecurringWorkScheduleRequest request) {
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new BadRequestException("Start date and end date are required.");
+        }
+
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new BadRequestException("End date must be the same as or after start date.");
+        }
+
+        validateScheduleInput(
+                request.getPlannedStartTime(),
+                request.getPlannedEndTime(),
+                request.getPaidLunchMinutes()
+        );
+    }
+
+    private boolean isWeekday(LocalDate date) {
+        return date.getDayOfWeek() != java.time.DayOfWeek.SATURDAY
+                && date.getDayOfWeek() != java.time.DayOfWeek.SUNDAY;
     }
 
     private int calculateExpectedWorkMinutes(LocalTime plannedStartTime, LocalTime plannedEndTime) {

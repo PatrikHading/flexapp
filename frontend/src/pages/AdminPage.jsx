@@ -5,6 +5,8 @@ import {
     updateUserAsAdmin,
     createManualTimeEntry,
     resetUserPasswordAsAdmin,
+    saveUserScheduleAsAdmin,
+    createRecurringSchedulesAsAdmin,
 } from "../services/auth";
 
 function AdminPage() {
@@ -50,6 +52,29 @@ function AdminPage() {
     const [manualLoading, setManualLoading] = useState(false);
     const [manualError, setManualError] = useState("");
     const [manualSuccess, setManualSuccess] = useState("");
+
+    const [scheduleUserId, setScheduleUserId] = useState("");
+    const [scheduleDate, setScheduleDate] = useState("");
+    const [scheduleStartTime, setScheduleStartTime] = useState("");
+    const [scheduleEndTime, setScheduleEndTime] = useState("");
+    const [schedulePaidLunchMinutes, setSchedulePaidLunchMinutes] = useState("30");
+
+    const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [scheduleError, setScheduleError] = useState("");
+    const [scheduleSuccess, setScheduleSuccess] = useState("");
+    const [savedSchedule, setSavedSchedule] = useState(null);
+
+    const [recurringUserId, setRecurringUserId] = useState("");
+    const [recurringStartDate, setRecurringStartDate] = useState("");
+    const [recurringEndDate, setRecurringEndDate] = useState("");
+    const [recurringStartTime, setRecurringStartTime] = useState("");
+    const [recurringEndTime, setRecurringEndTime] = useState("");
+    const [recurringPaidLunchMinutes, setRecurringPaidLunchMinutes] = useState("30");
+
+    const [recurringLoading, setRecurringLoading] = useState(false);
+    const [recurringError, setRecurringError] = useState("");
+    const [recurringSuccess, setRecurringSuccess] = useState("");
+    const [createdRecurringSchedules, setCreatedRecurringSchedules] = useState([]);
 
     const loadUsers = async () => {
         try {
@@ -245,6 +270,82 @@ function AdminPage() {
         }
     };
 
+    const handleSaveSchedule = async (e) => {
+        e.preventDefault();
+        setScheduleError("");
+        setScheduleSuccess("");
+        setSavedSchedule(null);
+
+        if (!scheduleUserId || !scheduleDate || !scheduleStartTime || !scheduleEndTime) {
+            setScheduleError("Användare, datum, starttid och sluttid måste fyllas i.");
+            return;
+        }
+
+        try {
+            setScheduleLoading(true);
+
+            const response = await saveUserScheduleAsAdmin(Number(scheduleUserId), {
+                workDate: scheduleDate,
+                plannedStartTime: scheduleStartTime,
+                plannedEndTime: scheduleEndTime,
+                paidLunchMinutes: Number(schedulePaidLunchMinutes || 0),
+            });
+
+            setSavedSchedule(response);
+            setScheduleSuccess("Schemat har sparats för användaren.");
+        } catch (err) {
+            setScheduleError(err.message);
+        } finally {
+            setScheduleLoading(false);
+        }
+    };
+
+    const handleSaveRecurringSchedule = async (e) => {
+        e.preventDefault();
+        setRecurringError("");
+        setRecurringSuccess("");
+        setCreatedRecurringSchedules([]);
+
+        if (
+            !recurringUserId ||
+            !recurringStartDate ||
+            !recurringEndDate ||
+            !recurringStartTime ||
+            !recurringEndTime
+        ) {
+            setRecurringError(
+                "Användare, startdatum, slutdatum, starttid och sluttid måste fyllas i."
+            );
+            return;
+        }
+
+        try {
+            setRecurringLoading(true);
+
+            const response = await createRecurringSchedulesAsAdmin(Number(recurringUserId), {
+                startDate: recurringStartDate,
+                endDate: recurringEndDate,
+                plannedStartTime: recurringStartTime,
+                plannedEndTime: recurringEndTime,
+                paidLunchMinutes: Number(recurringPaidLunchMinutes || 0),
+            });
+
+            setCreatedRecurringSchedules(Array.isArray(response) ? response : []);
+            setRecurringSuccess("Återkommande schema har skapats.");
+
+            setRecurringUserId("");
+            setRecurringStartDate("");
+            setRecurringEndDate("");
+            setRecurringStartTime("");
+            setRecurringEndTime("");
+            setRecurringPaidLunchMinutes("30");
+        } catch (err) {
+            setRecurringError(err.message);
+        } finally {
+            setRecurringLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="app-card">
@@ -268,7 +369,7 @@ function AdminPage() {
             <section className="app-card-hero">
                 <h1 className="app-card-title">Admin</h1>
                 <p className="app-card-subtitle">
-                    Här kan du hantera användare, uppdatera konton, registrera tid och återställa lösenord.
+                    Här kan du hantera användare, schema, manuella registreringar och lösenord.
                 </p>
             </section>
 
@@ -548,6 +649,240 @@ function AdminPage() {
 
                     {createError && <p className="app-message-error">{createError}</p>}
                     {createSuccess && <p className="app-message-success">{createSuccess}</p>}
+                </form>
+            </section>
+
+            <section className="app-card">
+                <h2>Spara schema åt användare</h2>
+                <p className="app-card-subtitle">
+                    Lägg in eller uppdatera schema för en användare.
+                </p>
+
+                <form className="profile-form" onSubmit={handleSaveSchedule}>
+                    <div className="profile-form-grid">
+                        <div className="profile-form-full">
+                            <label className="app-label">Användare</label>
+                            <select
+                                className="app-input"
+                                value={scheduleUserId}
+                                onChange={(e) => setScheduleUserId(e.target.value)}
+                                required
+                            >
+                                <option value="">Välj användare</option>
+                                {users.map((user) => (
+                                    <option key={user.id} value={user.id}>
+                                        {user.firstName} {user.lastName} ({user.email})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="app-label">Datum</label>
+                            <input
+                                className="app-input"
+                                type="date"
+                                value={scheduleDate}
+                                onChange={(e) => setScheduleDate(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Starttid</label>
+                            <input
+                                className="app-input"
+                                type="time"
+                                value={scheduleStartTime}
+                                onChange={(e) => setScheduleStartTime(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Sluttid</label>
+                            <input
+                                className="app-input"
+                                type="time"
+                                value={scheduleEndTime}
+                                onChange={(e) => setScheduleEndTime(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Betald lunch (minuter)</label>
+                            <input
+                                className="app-input"
+                                type="number"
+                                min="0"
+                                value={schedulePaidLunchMinutes}
+                                onChange={(e) => setSchedulePaidLunchMinutes(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="profile-form-actions">
+                        <button className="app-button" type="submit" disabled={scheduleLoading}>
+                            {scheduleLoading ? "Sparar..." : "Spara schema"}
+                        </button>
+                    </div>
+
+                    {scheduleError && <p className="app-message-error">{scheduleError}</p>}
+                    {scheduleSuccess && <p className="app-message-success">{scheduleSuccess}</p>}
+
+                    {savedSchedule && (
+                        <div className="admin-saved-schedule-box">
+                            <div className="app-grid">
+                                <div className="app-info-box">
+                                    <span className="app-label">Datum</span>
+                                    <span className="app-value">{savedSchedule.workDate}</span>
+                                </div>
+
+                                <div className="app-info-box">
+                                    <span className="app-label">Starttid</span>
+                                    <span className="app-value">{savedSchedule.plannedStartTime}</span>
+                                </div>
+
+                                <div className="app-info-box">
+                                    <span className="app-label">Sluttid</span>
+                                    <span className="app-value">{savedSchedule.plannedEndTime}</span>
+                                </div>
+
+                                <div className="app-info-box">
+                                    <span className="app-label">Betald lunch</span>
+                                    <span className="app-value">{savedSchedule.paidLunchMinutes} min</span>
+                                </div>
+
+                                <div className="app-info-box">
+                                    <span className="app-label">Beräknad arbetstid</span>
+                                    <span className="app-value">{savedSchedule.expectedWorkMinutes} min</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </form>
+            </section>
+
+            <section className="app-card">
+                <h2>Skapa återkommande schema</h2>
+                <p className="app-card-subtitle">
+                    Skapa schema för flera dagar i ett intervall för en användare.
+                </p>
+
+                <form className="profile-form" onSubmit={handleSaveRecurringSchedule}>
+                    <div className="profile-form-grid">
+                        <div className="profile-form-full">
+                            <label className="app-label">Användare</label>
+                            <select
+                                className="app-input"
+                                value={recurringUserId}
+                                onChange={(e) => setRecurringUserId(e.target.value)}
+                                required
+                            >
+                                <option value="">Välj användare</option>
+                                {users.map((user) => (
+                                    <option key={user.id} value={user.id}>
+                                        {user.firstName} {user.lastName} ({user.email})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="app-label">Startdatum</label>
+                            <input
+                                className="app-input"
+                                type="date"
+                                value={recurringStartDate}
+                                onChange={(e) => setRecurringStartDate(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Slutdatum</label>
+                            <input
+                                className="app-input"
+                                type="date"
+                                value={recurringEndDate}
+                                onChange={(e) => setRecurringEndDate(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Starttid</label>
+                            <input
+                                className="app-input"
+                                type="time"
+                                value={recurringStartTime}
+                                onChange={(e) => setRecurringStartTime(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Sluttid</label>
+                            <input
+                                className="app-input"
+                                type="time"
+                                value={recurringEndTime}
+                                onChange={(e) => setRecurringEndTime(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="app-label">Betald lunch (minuter)</label>
+                            <input
+                                className="app-input"
+                                type="number"
+                                min="0"
+                                value={recurringPaidLunchMinutes}
+                                onChange={(e) => setRecurringPaidLunchMinutes(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="profile-form-actions">
+                        <button className="app-button" type="submit" disabled={recurringLoading}>
+                            {recurringLoading ? "Skapar..." : "Skapa återkommande schema"}
+                        </button>
+                    </div>
+
+                    {recurringError && <p className="app-message-error">{recurringError}</p>}
+                    {recurringSuccess && <p className="app-message-success">{recurringSuccess}</p>}
+
+                    {createdRecurringSchedules.length > 0 && (
+                        <div className="admin-saved-schedule-box">
+                            <p className="app-card-subtitle">
+                                {createdRecurringSchedules.length} scheman skapades.
+                            </p>
+
+                            <div className="admin-recurring-schedule-list">
+                                {createdRecurringSchedules.map((schedule) => (
+                                    <div key={schedule.id} className="app-info-box">
+                                        <span className="app-label">Datum</span>
+                                        <span className="app-value">{schedule.workDate}</span>
+
+                                        <span className="app-label">Tid</span>
+                                        <span className="app-value">
+                      {schedule.plannedStartTime} - {schedule.plannedEndTime}
+                    </span>
+
+                                        <span className="app-label">Lunch</span>
+                                        <span className="app-value">{schedule.paidLunchMinutes} min</span>
+
+                                        <span className="app-label">Arbetstid</span>
+                                        <span className="app-value">{schedule.expectedWorkMinutes} min</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </form>
             </section>
 
