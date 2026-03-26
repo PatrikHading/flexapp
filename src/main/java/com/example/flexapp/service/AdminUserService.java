@@ -1,5 +1,6 @@
 package com.example.flexapp.service;
 
+import com.example.flexapp.dto.AdminChangePasswordRequest;
 import com.example.flexapp.dto.AdminUpdateUserRequest;
 import com.example.flexapp.dto.CreateUserRequest;
 import com.example.flexapp.dto.UserProfileResponse;
@@ -11,7 +12,6 @@ import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -86,6 +86,22 @@ public class AdminUserService {
         return toUserProfileResponse(savedUser);
     }
 
+    public void changeUserPassword(Long userId, AdminChangePasswordRequest request) {
+        requireAdmin();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        validateAdminChangePasswordRequest(request);
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password must be different from the current password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
     public void deactivateUser(Long userId) {
         requireAdmin();
 
@@ -151,6 +167,16 @@ public class AdminUserService {
 
         if (request.getRole() == null) {
             throw new BadRequestException("Role is required.");
+        }
+    }
+
+    private void validateAdminChangePasswordRequest(AdminChangePasswordRequest request) {
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new BadRequestException("New password is required.");
+        }
+
+        if (request.getNewPassword().length() < 6) {
+            throw new BadRequestException("New password must be at least 6 characters long.");
         }
     }
 

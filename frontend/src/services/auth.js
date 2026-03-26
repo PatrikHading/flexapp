@@ -343,3 +343,119 @@ export const createUserAsAdmin = async ({
 
     return await response.json();
 };
+
+export const updateUserAsAdmin = async (
+    userId,
+    { firstName, lastName, email, role, active }
+) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            role,
+            active,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att redigera användare.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte uppdatera användaren.");
+    }
+
+    return await response.json();
+};
+
+export const createManualTimeEntry = async (
+    userId,
+    { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }
+) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/manual`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            workDate,
+            checkInTime,
+            lunchOutTime,
+            lunchInTime,
+            checkOutTime,
+            comment,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte spara manuell tidrapport.");
+    }
+
+    return await response.json();
+};
+
+export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
+    const authHeader = getAuthHeader();
+
+    if (!authHeader) {
+        throw new Error("Ingen aktiv session.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/password`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+        },
+        body: JSON.stringify({
+            newPassword,
+        }),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            clearAuthHeader();
+            throw new Error("Sessionen har gått ut.");
+        }
+
+        if (response.status === 403) {
+            throw new Error("Du har inte behörighet att byta lösenord för användare.");
+        }
+
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte uppdatera lösenordet.");
+    }
+
+    return true;
+};

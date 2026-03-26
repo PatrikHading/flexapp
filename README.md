@@ -71,25 +71,18 @@ Spring Boot REST API
 - ✔ Admin can view all users
 - ✔ Admin can create new users
 - ✔ Global exception handling implemented
-- ✔ React frontend created using Vite
-- ✔ Login flow integrated with backend
-- ✔ Protected routes implemented
-- ✔ Dashboard with user overview
-- ✔ Schedule page
-- ✔ Time reporting page
-- ✔ History page
-- ✔ Profile page
-- ✔ Admin page with user list and creation form
-- ✔ Flex balance visible in frontend
 
 **Frontend:**
 - ✔ React frontend created with Vite
-- ✔ Frontend login integrated with backend
-- ✔ Protected routes implemented in frontend
+- ✔ Login flow integrated with backend
+- ✔ Protected routes implemented
+- ✔ Dashboard with user overview
 - ✔ Schedule page connected to backend
-- ✔ Time registration page connected to backend
+- ✔ Time reporting page connected to backend
 - ✔ History page connected to backend
 - ✔ Profile page with password change implemented
+- ✔ Admin page with user list and creation form
+- ✔ Flex balance visible in frontend
 
 ---
 
@@ -109,7 +102,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=your_password
 ```
 
-### 3. Run Backend
+### 3. Run the backend
 
 From the project root:
 
@@ -119,7 +112,7 @@ From the project root:
 
 Backend runs at: `http://localhost:8080`
 
-### 4. Run Frontend
+### 4. Run the frontend
 
 Navigate to the frontend directory:
 
@@ -133,59 +126,64 @@ Frontend runs at: `http://localhost:5173`
 
 ---
 
-## Frontend Setup
-
-The project includes a React frontend located in the `/frontend` directory.
-
-### Install dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-### Run the frontend
-
-```bash
-npm run dev
-```
-
-Frontend will be available at: `http://localhost:5173`
-
-The frontend communicates with the backend at: `http://localhost:8080`
-
----
-
 ## Authentication
 
-The API uses Spring Security with HTTP Basic authentication. The React frontend stores the Basic Auth header locally and sends it with each request.
+The API uses Spring Security with HTTP Basic authentication. The React frontend stores the Basic Auth header in LocalStorage under the key `authHeader` and sends it with every request.
 
-Role-based access control is implemented:
+### Roles
 
-USER:
-- Can access own profile, schedules and time entries
-- Can update own profile information
-- Can change password
-- Can register work time manually
-
-ADMIN:
-- All USER permissions
-- Can view all users
-- Can create new users
+| Role  | Access                                                  |
+|-------|---------------------------------------------------------|
+| USER  | Own profile, schedules, and time entries only           |
+| ADMIN | All USER permissions, plus full user management         |
 
 ### Test Users
 
-| Role  | Email               | Password  |
-|-------|---------------------|-----------|
-| Admin | admin@flexapp.com   | temp123   |
-| User  | user@flexapp.com    | temp123   |
+| Role  | Email               | Password |
+|-------|---------------------|----------|
+| Admin | admin@flexapp.com   | temp123  |
+| User  | user@flexapp.com    | temp123  |
 
-### Authorization
+---
 
-| Role  | Access                                     |
-|-------|--------------------------------------------|
-| USER  | Own schedules and time entries only        |
-| ADMIN | All users' data                            |
+## User Profile
+
+Users can manage their own account from the profile page:
+
+- View profile information
+- Update name and email
+- Change password
+
+---
+
+## Admin Functionality
+
+Administrators can manage users and time entries via the admin panel. All admin functionality is restricted to users with the `ADMIN` role.
+
+### User Management
+
+Admins can:
+
+- View all users
+- Create new users
+- Edit existing users
+- Activate or deactivate accounts
+- Change user roles (`USER` / `ADMIN`)
+- Reset user passwords
+
+### Manual Time Registration
+
+Admins can register work time on behalf of users retroactively — for example, if a user forgot to log their time.
+
+Supported fields:
+
+| Field         | Description                        |
+|---------------|------------------------------------|
+| Work date     | The date the work was performed    |
+| Check-in time | Start of the work day              |
+| Lunch out/in  | Start and end of the lunch break   |
+| Check-out time| End of the work day                |
+| Comment       | Optional note about the entry      |
 
 ---
 
@@ -223,7 +221,7 @@ PUT /api/users/me/password
 ### Admin
 
 ```
-GET /api/admin/users
+GET  /api/admin/users
 POST /api/admin/users
 ```
 
@@ -240,12 +238,6 @@ flexapp/
         ├── pages/
         └── services/
 ```
-
----
-
-## Security Notes
-
-Authentication uses HTTP Basic Auth. The frontend stores the `Authorization` header under the key `authHeader` in LocalStorage, which is then included in all API requests.
 
 ---
 

@@ -1,5 +1,6 @@
 package com.example.flexapp.controller;
 
+import com.example.flexapp.dto.AdminChangePasswordRequest;
 import com.example.flexapp.dto.AdminUpdateUserRequest;
 import com.example.flexapp.dto.CreateUserRequest;
 import com.example.flexapp.dto.UserProfileResponse;
@@ -33,6 +34,13 @@ public class AdminUserController {
     public UserProfileResponse updateUser(@PathVariable Long id,
                                           @RequestBody AdminUpdateUserRequest request) {
         return adminUserService.updateUser(id, request);
+    }
+
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Void> changeUserPassword(@PathVariable Long id,
+                                                   @RequestBody AdminChangePasswordRequest request) {
+        adminUserService.changeUserPassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

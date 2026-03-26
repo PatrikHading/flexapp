@@ -84,6 +84,9 @@ function HistoryPage({ user }) {
             "Arbetade minuter",
             "Lunchminuter",
             "Flex minuter",
+            "Manuell registrering",
+            "Status",
+            "Kommentar",
         ];
 
         const rows = filteredEntries.map((entry) => [
@@ -95,6 +98,9 @@ function HistoryPage({ user }) {
             entry.workedMinutes ?? "",
             entry.lunchMinutes ?? "",
             entry.flexMinutes ?? "",
+            entry.manualEntry ? "Ja" : "Nej",
+            entry.status ?? "",
+            entry.comment ?? "",
         ]);
 
         const csvContent = [
@@ -203,7 +209,27 @@ function HistoryPage({ user }) {
             ) : (
                 filteredEntries.map((entry) => (
                     <section key={entry.id} className="app-card">
-                        <h2>{entry.workDate || "Okänt datum"}</h2>
+                        <div className="history-entry-header">
+                            <div>
+                                <h2>{entry.workDate || "Okänt datum"}</h2>
+                            </div>
+
+                            <div className="history-badges">
+                <span
+                    className={`history-badge ${
+                        entry.manualEntry ? "history-badge-manual" : "history-badge-live"
+                    }`}
+                >
+                  {entry.manualEntry ? "Manuell" : "Automatisk"}
+                </span>
+
+                                {entry.status && (
+                                    <span className="history-badge history-badge-status">
+                    {entry.status}
+                  </span>
+                                )}
+                            </div>
+                        </div>
 
                         <div className="app-grid">
                             <div className="app-info-box">
@@ -255,6 +281,13 @@ function HistoryPage({ user }) {
                 </span>
                             </div>
                         </div>
+
+                        {entry.comment && (
+                            <div className="history-comment-box">
+                                <span className="app-label">Kommentar</span>
+                                <p className="history-comment-text">{entry.comment}</p>
+                            </div>
+                        )}
                     </section>
                 ))
             )}
