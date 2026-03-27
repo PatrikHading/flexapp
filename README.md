@@ -1,246 +1,207 @@
-# FlexApp
+# FlexApp – Time & Flex Tracking System
 
-> Web-based flex time tracking system — built with Java Spring Boot, PostgreSQL, and React.
+FlexApp är en fullstack webbapplikation för att hantera arbetstid, flexsaldo och scheman inom en organisation.
 
----
-
-## Overview
-
-FlexApp is a full-stack web application for tracking working hours, flexible schedules, and flex balance. The system supports both employees and administrators and provides secure time tracking with role-based access control.
+Systemet är byggt för att användas i verklig drift och fokuserar på enkel daglig användning, tydlig översikt och administrativ kontroll.
 
 ---
 
-## Architecture
+## Funktioner
+
+### Användare
+- Checka in / ut arbetsdag
+- Registrera lunch (ut/in)
+- Registrera manuell tidrapport
+- Se arbetshistorik
+- Se aktuellt flexsaldo
+- Uppdatera profil och byta lösenord
+
+### Administratörer
+- Skapa, uppdatera och inaktivera användare
+- Hantera användarroller (USER / ADMIN)
+- Återställa användares lösenord
+- Skapa enskilda och återkommande arbetsscheman per användare
+
+### Schemahantering
+- Skapa/uppdatera schema per datum och användare
+- Hämta dagens schema
+- Skapa återkommande scheman för ett datumintervall
+
+---
+
+## Arkitektur
+
+Applikationen är uppdelad i tydliga lager:
 
 ```
-Frontend (React + Vite)
-        │
-        ▼
-Spring Boot REST API
-        │
-        ▼
-  PostgreSQL Database
+Controller → Service → Repository → Database
 ```
+
+- **Controller** – hanterar HTTP-anrop
+- **Service** – affärslogik och regler
+- **Repository** – databasåtkomst
+- **DTOs** – säker och tydlig dataöverföring mellan lager
+
+---
+
+## Säkerhet
+
+- JWT lagras i en **HttpOnly-cookie** (ej tillgänglig via JavaScript)
+- Cookie-baserad autentisering med 8 timmars giltighetstid
+- Role-based access control: `USER` / `ADMIN`
+- Krypterade lösenord med BCrypt
+- CORS konfigurerat per miljö
 
 ---
 
 ## Tech Stack
 
-| Layer       | Technology                   |
-|-------------|------------------------------|
-| Backend     | Spring Boot (Java 21+)       |
-| Persistence | Spring Data JPA / Hibernate  |
-| Database    | PostgreSQL                   |
-| Security    | Spring Security (HTTP Basic) |
-| Frontend    | React (Vite) + React Router  |
-| Build Tool  | Maven + npm                  |
+### Backend
+- Java
+- Spring Boot 4
+- Spring Security
+- JPA / Hibernate
+- PostgreSQL
+- Lombok
+
+### Frontend
+- React
+- React Router
+- Fetch API (cookie-baserad autentisering)
 
 ---
 
-## Features
+## API-översikt
 
-- Check in / Check out
-- Lunch tracking
-- Flexible work schedules
-- Flex balance calculation
-- Manual time entries (including retroactive entries)
-- User profile management
-- Password change
-- Admin management of employees
-- Admin user creation
-- User authentication and roles
-- Role-based access control
+Autentisering sker via en HttpOnly JWT-cookie som sätts vid inloggning och rensas vid utloggning. Alla skyddade endpoints kräver en giltig cookie.
+
+### Autentisering
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `POST` | `/api/auth/login` | Logga in, sätter JWT-cookie |
+| `POST` | `/api/auth/logout` | Logga ut, rensar JWT-cookie |
+
+### Användarprofil
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `GET` | `/api/users/me` | Hämta inloggad användares profil |
+| `PUT` | `/api/users/me` | Uppdatera profil (namn, e-post) |
+| `PUT` | `/api/users/me/password` | Byt lösenord |
+
+### Tidsregistrering
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `POST` | `/api/time/{userId}/check-in` | Checka in |
+| `POST` | `/api/time/{userId}/lunch-out` | Stämpla ut till lunch |
+| `POST` | `/api/time/{userId}/lunch-in` | Stämpla in från lunch |
+| `POST` | `/api/time/{userId}/check-out` | Checka ut |
+| `POST` | `/api/time/{userId}/manual` | Registrera manuell tidrapport |
+| `GET` | `/api/time/{userId}/today` | Hämta dagens tidrapport |
+| `GET` | `/api/time/{userId}/history` | Hämta arbetshistorik |
+| `GET` | `/api/time/{userId}/flex-balance` | Hämta aktuellt flexsaldo |
+
+### Scheman
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `POST` | `/api/schedules/{userId}` | Skapa eller uppdatera schema för ett datum |
+| `GET` | `/api/schedules/{userId}/today` | Hämta dagens schema |
+| `GET` | `/api/schedules/{userId}` | Hämta alla scheman för användare |
+
+### Admin – Användare
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `GET` | `/api/admin/users` | Lista alla användare |
+| `POST` | `/api/admin/users` | Skapa ny användare |
+| `PUT` | `/api/admin/users/{id}` | Uppdatera användare |
+| `PUT` | `/api/admin/users/{id}/password` | Återställ användares lösenord |
+| `DELETE` | `/api/admin/users/{id}` | Inaktivera användare |
+
+### Admin – Scheman
+| Metod | Endpoint | Beskrivning |
+|-------|----------|-------------|
+| `POST` | `/api/admin/users/{userId}/schedules/recurring` | Skapa återkommande schema för datumintervall |
 
 ---
 
-## Current Status
+## Installation (lokal utveckling)
 
-**Backend:**
-- ✔ Spring Boot backend fully implemented
-- ✔ PostgreSQL persistence configured
-- ✔ User authentication with Spring Security (HTTP Basic)
-- ✔ Role-based authorization (USER / ADMIN)
-- ✔ Work schedules with expected work time and paid lunch
-- ✔ Live time tracking (check-in, lunch-out, lunch-in, check-out)
-- ✔ Manual time entry for missed registrations
-- ✔ Historical time data retrieval
-- ✔ Flex balance calculation
-- ✔ User profile management
-- ✔ Password change functionality
-- ✔ Admin API for managing users
-- ✔ Admin can view all users
-- ✔ Admin can create new users
-- ✔ Global exception handling implemented
-
-**Frontend:**
-- ✔ React frontend created with Vite
-- ✔ Login flow integrated with backend
-- ✔ Protected routes implemented
-- ✔ Dashboard with user overview
-- ✔ Schedule page connected to backend
-- ✔ Time reporting page connected to backend
-- ✔ History page connected to backend
-- ✔ Profile page with password change implemented
-- ✔ Admin page with user list and creation form
-- ✔ Flex balance visible in frontend
-
----
-
-## Local Setup
-
-### 1. Create the database
-
-```sql
-CREATE DATABASE flexapp;
+### 1. Klona repo
+```bash
+git clone https://github.com/PatrikHading/flexapp.git
+cd flexapp
 ```
 
-### 2. Configure environment variables
-
+### 2. Databas
+Skapa en PostgreSQL-databas med namnet:
 ```
-DB_URL=jdbc:postgresql://localhost:5432/flexapp
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
+flexapp
 ```
 
-### 3. Run the backend
-
-From the project root:
+### 3. Miljövariabler
+Applikationen läser konfiguration från miljövariabler. Sätt dessa innan du startar:
 
 ```bash
-./mvnw spring-boot:run
+export DB_URL=jdbc:postgresql://localhost:5432/flexapp
+export DB_USERNAME=your_user
+export DB_PASSWORD=your_password
+export JWT_SECRET=your-secret-key
+export CORS_ORIGIN=http://localhost:5173
 ```
 
-Backend runs at: `http://localhost:8080`
+> I dev-läge (`application-dev.properties`) är `cookie.secure=false` och CORS tillåter `http://localhost:5173` som standard.
 
-### 4. Run the frontend
+### 4. Starta backend
+```bash
+mvn spring-boot:run
+```
 
-Navigate to the frontend directory:
-
+### 5. Starta frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend runs at: `http://localhost:5173`
+Frontend körs på `http://localhost:5173` och kommunicerar med backend på `http://localhost:8080`.
 
 ---
 
-## Authentication
+## Roadmap
 
-The API uses Spring Security with HTTP Basic authentication. The React frontend stores the Basic Auth header in LocalStorage under the key `authHeader` and sends it with every request.
+Planerade förbättringar:
 
-### Roles
-
-| Role  | Access                                                  |
-|-------|---------------------------------------------------------|
-| USER  | Own profile, schedules, and time entries only           |
-| ADMIN | All USER permissions, plus full user management         |
-
-### Test Users
-
-| Role  | Email               | Password |
-|-------|---------------------|----------|
-| Admin | admin@flexapp.com   | temp123  |
-| User  | user@flexapp.com    | temp123  |
+- [ ] Dockerisering
+- [ ] Deploy till moln (AWS)
+- [ ] Refresh tokens
+- [ ] Förbättrad loggning och audit
+- [ ] Integrationstester
+- [ ] CI/CD pipeline
 
 ---
 
-## User Profile
+## Status
 
-Users can manage their own account from the profile page:
-
-- View profile information
-- Update name and email
-- Change password
+Aktiv utveckling — Målsättning: stabil drift i organisationsmiljö
 
 ---
 
-## Admin Functionality
+## Syfte
 
-Administrators can manage users and time entries via the admin panel. All admin functionality is restricted to users with the `ADMIN` role.
+FlexApp är utvecklad som en praktisk lösning för att:
 
-### User Management
-
-Admins can:
-
-- View all users
-- Create new users
-- Edit existing users
-- Activate or deactivate accounts
-- Change user roles (`USER` / `ADMIN`)
-- Reset user passwords
-
-### Manual Time Registration
-
-Admins can register work time on behalf of users retroactively — for example, if a user forgot to log their time.
-
-Supported fields:
-
-| Field         | Description                        |
-|---------------|------------------------------------|
-| Work date     | The date the work was performed    |
-| Check-in time | Start of the work day              |
-| Lunch out/in  | Start and end of the lunch break   |
-| Check-out time| End of the work day                |
-| Comment       | Optional note about the entry      |
+- Förenkla tidsrapportering
+- Ge bättre översikt över flexsaldo
+- Minska administrativt arbete
+- Ersätta manuella eller spridda system
 
 ---
 
-## API Overview
+## Kontakt
 
-### Time Tracking
+GitHub: [https://github.com/PatrikHading](https://github.com/PatrikHading)
 
-```
-POST /api/time/{userId}/check-in
-POST /api/time/{userId}/lunch-out
-POST /api/time/{userId}/lunch-in
-POST /api/time/{userId}/check-out
-POST /api/time/{userId}/manual
-
-GET  /api/time/{userId}/today
-GET  /api/time/{userId}/history
-GET  /api/time/{userId}/flex-balance
-```
-
-### Schedules
-
-```
-GET  /api/schedules/{userId}
-POST /api/schedules/{userId}
-```
-
-### User
-
-```
-GET /api/users/me
-PUT /api/users/me
-PUT /api/users/me/password
-```
-
-### Admin
-
-```
-GET  /api/admin/users
-POST /api/admin/users
-```
-
----
-
-## Project Structure
-
-```
-flexapp/
-├── backend/          # Spring Boot application
-└── frontend/
-    └── src/
-        ├── components/
-        ├── pages/
-        └── services/
-```
-
----
+___
 
 ## License
-
-Private project — all rights reserved.
+© 2026 Patrik Hading. All rights reserved.
+This software is proprietary and may not be used, copied, modified, or distributed without explicit permission.
