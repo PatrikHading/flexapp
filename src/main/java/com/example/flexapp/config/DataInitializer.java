@@ -5,12 +5,14 @@ import com.example.flexapp.enums.Role;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.service.WorkScheduleService;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Component
+@Profile("dev")
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;

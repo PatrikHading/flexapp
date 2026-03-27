@@ -1,88 +1,45 @@
 const API_BASE_URL = "http://localhost:8080";
 
-export const createBasicAuthHeader = (email, password) => {
-    return "Basic " + btoa(`${email}:${password}`);
-};
-
-export const saveAuthHeader = (authHeader) => {
-    localStorage.setItem("authHeader", authHeader);
-};
-
-export const getAuthHeader = () => {
-    return localStorage.getItem("authHeader");
-};
-
-export const clearAuthHeader = () => {
-    localStorage.removeItem("authHeader");
-};
-
-export const fetchCurrentUser = async () => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        return null;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
-    });
-
-    if (!response.ok) {
-        clearAuthHeader();
-        return null;
-    }
-
-    return await response.json();
-};
-
 export const loginUser = async (email, password) => {
-    const authHeader = createBasicAuthHeader(email, password);
-
-    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            throw new Error("Fel e-post eller lösenord.");
-        }
+        if (response.status === 401) throw new Error("Fel e-post eller lösenord.");
         throw new Error("Något gick fel vid inloggning.");
     }
 
-    saveAuthHeader(authHeader);
+    return fetchCurrentUser();
+};
+
+export const logoutUser = async () => {
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+    });
+};
+
+export const fetchCurrentUser = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        credentials: "include",
+    });
+
+    if (!response.ok) return null;
     return await response.json();
 };
 
 export const fetchUserSchedule = async (userId) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 404) {
-            return null;
-        }
-
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 404) return null;
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         throw new Error("Kunde inte hämta schema.");
     }
 
@@ -90,29 +47,13 @@ export const fetchUserSchedule = async (userId) => {
 };
 
 export const fetchTodayTimeEntry = async (userId) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/today`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 404) {
-            return null;
-        }
-
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 404) return null;
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         throw new Error("Kunde inte hämta dagens tidrapport.");
     }
 
@@ -120,25 +61,13 @@ export const fetchTodayTimeEntry = async (userId) => {
 };
 
 export const postTimeAction = async (userId, action) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/${action}`, {
         method: "POST",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte uppdatera tidrapporteringen.");
     }
@@ -147,29 +76,13 @@ export const postTimeAction = async (userId, action) => {
 };
 
 export const fetchTimeHistory = async (userId) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/history`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 404) {
-            return [];
-        }
-
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 404) return [];
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         throw new Error("Kunde inte hämta historik.");
     }
 
@@ -177,30 +90,15 @@ export const fetchTimeHistory = async (userId) => {
 };
 
 export const changePassword = async (currentPassword, newPassword) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/users/me/password`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            currentPassword,
-            newPassword,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte byta lösenord.");
     }
@@ -209,25 +107,12 @@ export const changePassword = async (currentPassword, newPassword) => {
 };
 
 export const fetchFlexBalance = async (userId) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/flex-balance`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         throw new Error("Kunde inte hämta flexsaldo.");
     }
 
@@ -235,29 +120,13 @@ export const fetchFlexBalance = async (userId) => {
 };
 
 export const fetchAllUsers = async () => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeader,
-        },
+        credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att se användare.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att se användare.");
         throw new Error("Kunde inte hämta användarlistan.");
     }
 
@@ -265,31 +134,15 @@ export const fetchAllUsers = async () => {
 };
 
 export const updateMyProfile = async ({ firstName, lastName, email }) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/users/me`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte uppdatera profilen.");
     }
@@ -297,46 +150,17 @@ export const updateMyProfile = async ({ firstName, lastName, email }) => {
     return await response.json();
 };
 
-export const createUserAsAdmin = async ({
-                                            firstName,
-                                            lastName,
-                                            email,
-                                            password,
-                                            role,
-                                            active,
-                                        }) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
+export const createUserAsAdmin = async ({ firstName, lastName, email, password, role, active }) => {
     const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            password,
-            role,
-            active,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password, role, active }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att skapa användare.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att skapa användare.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte skapa användaren.");
     }
@@ -344,41 +168,17 @@ export const createUserAsAdmin = async ({
     return await response.json();
 };
 
-export const updateUserAsAdmin = async (
-    userId,
-    { firstName, lastName, email, role, active }
-) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
+export const updateUserAsAdmin = async (userId, { firstName, lastName, email, role, active }) => {
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            role,
-            active,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, role, active }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att redigera användare.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att redigera användare.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte uppdatera användaren.");
     }
@@ -386,38 +186,16 @@ export const updateUserAsAdmin = async (
     return await response.json();
 };
 
-export const createManualTimeEntry = async (
-    userId,
-    { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }
-) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
+export const createManualTimeEntry = async (userId, { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/manual`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            workDate,
-            checkInTime,
-            lunchOutTime,
-            lunchInTime,
-            checkOutTime,
-            comment,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte spara manuell tidrapport.");
     }
@@ -426,33 +204,16 @@ export const createManualTimeEntry = async (
 };
 
 export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/password`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            newPassword,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att byta lösenord för användare.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att byta lösenord för användare.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte uppdatera lösenordet.");
     }
@@ -460,40 +221,17 @@ export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
     return true;
 };
 
-export const saveUserScheduleAsAdmin = async (
-    userId,
-    { workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }
-) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
+export const saveUserScheduleAsAdmin = async (userId, { workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }) => {
     const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-        },
-        body: JSON.stringify({
-            workDate,
-            plannedStartTime,
-            plannedEndTime,
-            paidLunchMinutes,
-        }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }),
     });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att spara schema.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att spara schema.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte spara schema.");
     }
@@ -501,44 +239,17 @@ export const saveUserScheduleAsAdmin = async (
     return await response.json();
 };
 
-export const createRecurringSchedulesAsAdmin = async (
-    userId,
-    { startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }
-) => {
-    const authHeader = getAuthHeader();
-
-    if (!authHeader) {
-        throw new Error("Ingen aktiv session.");
-    }
-
-    const response = await fetch(
-        `${API_BASE_URL}/api/admin/users/${userId}/schedules/recurring`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: authHeader,
-            },
-            body: JSON.stringify({
-                startDate,
-                endDate,
-                plannedStartTime,
-                plannedEndTime,
-                paidLunchMinutes,
-            }),
-        }
-    );
+export const createRecurringSchedulesAsAdmin = async (userId, { startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/schedules/recurring`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }),
+    });
 
     if (!response.ok) {
-        if (response.status === 401) {
-            clearAuthHeader();
-            throw new Error("Sessionen har gått ut.");
-        }
-
-        if (response.status === 403) {
-            throw new Error("Du har inte behörighet att skapa återkommande schema.");
-        }
-
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att skapa återkommande schema.");
         const errorText = await response.text();
         throw new Error(errorText || "Kunde inte skapa återkommande schema.");
     }
