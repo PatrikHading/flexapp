@@ -5,7 +5,7 @@ import com.example.flexapp.dto.ManualTimeEntryRequest;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.service.TimeEntryService;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -40,7 +40,7 @@ public class TimeEntryController {
 
     @PostMapping("/{userId}/manual")
     public TimeEntryResponse registerManualEntry(@PathVariable Long userId,
-                                                 @RequestBody ManualTimeEntryRequest request) {
+                                                 @Valid @RequestBody ManualTimeEntryRequest request) {
         return timeEntryService.registerManualEntry(userId, request);
     }
 

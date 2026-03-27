@@ -26,33 +26,18 @@ public class FlexCalculationService {
     }
 
     public int calculateFlexMinutes(WorkSchedule schedule, TimeEntry timeEntry) {
-        int earlyMinutes = calculateEarlyMinutes(schedule, timeEntry);
-        int lateMinutes = calculateLateMinutes(schedule, timeEntry);
+        int plannedMinutes = (int) Duration.between(
+                schedule.getPlannedStartTime(),
+                schedule.getPlannedEndTime()
+        ).toMinutes() - schedule.getPaidLunchMinutes();
+
         int actualLunchMinutes = calculateLunchMinutes(timeEntry);
-        int extraLunchMinutes = calculateExtraLunchMinutes(actualLunchMinutes, schedule.getPaidLunchMinutes());
+        int workedMinutes = calculateWorkedMinutes(
+                timeEntry.getCheckInTime(),
+                timeEntry.getCheckOutTime(),
+                actualLunchMinutes
+        );
 
-        return earlyMinutes + lateMinutes + extraLunchMinutes;
-    }
-
-    private int calculateEarlyMinutes(WorkSchedule schedule, TimeEntry timeEntry) {
-        LocalDateTime plannedStart = LocalDateTime.of(
-                timeEntry.getWorkDate(),
-                schedule.getPlannedStartTime());
-
-        if (timeEntry.getCheckInTime().isBefore(plannedStart)) {
-            return (int) Duration.between(timeEntry.getCheckInTime(), plannedStart).toMinutes();
-        }
-        return 0;
-    }
-
-    private int calculateLateMinutes(WorkSchedule schedule, TimeEntry timeEntry) {
-        LocalDateTime plannedEnd = LocalDateTime.of(
-                timeEntry.getWorkDate(),
-                schedule.getPlannedEndTime());
-
-        if (timeEntry.getCheckOutTime().isAfter(plannedEnd)) {
-            return (int) Duration.between(plannedEnd, timeEntry.getCheckOutTime()).toMinutes();
-        }
-        return 0;
+        return workedMinutes - plannedMinutes;
     }
 }

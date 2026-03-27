@@ -48,6 +48,10 @@ public class TimeEntryService {
 
         LocalDate today = LocalDate.now();
 
+        workScheduleRepository.findByUserIdAndWorkDate(userId, today)
+                .orElseThrow(() -> new BadRequestException(
+                        "No work schedule found for user " + userId + " on " + today + ". Please contact your administrator to create a work schedule."));
+
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, today).orElse(null);
 
         if (existingEntry != null && existingEntry.getCheckInTime() != null) {
@@ -132,15 +136,11 @@ public class TimeEntryService {
             throw new BadRequestException("User cannot check out while lunch is active.");
         }
 
-        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, timeEntry.getWorkDate())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "No work schedule found for userId " + userId + " and date " + timeEntry.getWorkDate()
-                ));
+        timeEntry.setCheckOutTime(LocalDateTime.now());
 
-        LocalDateTime checkOutTime = LocalDateTime.now();
-        timeEntry.setCheckOutTime(checkOutTime);
+        workScheduleRepository.findByUserIdAndWorkDate(userId, timeEntry.getWorkDate())
+                .ifPresent(schedule -> applyCalculatedFields(timeEntry, schedule));
 
-        applyCalculatedFields(timeEntry, schedule);
         timeEntry.setStatus(TimeEntryStatus.COMPLETED);
 
         return toResponse(timeEntryRepository.save(timeEntry));

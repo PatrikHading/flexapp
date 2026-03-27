@@ -34,35 +34,27 @@ public class DataInitializer implements CommandLineRunner {
                 "Admin",
                 "User",
                 "temp123",
-                Role.ADMIN
-        );
+                Role.ADMIN);
 
         createOrUpdateUser(
                 "user@flexapp.com",
                 "Normal",
                 "User",
                 "temp123",
-                Role.USER
-        );
+                Role.USER);
 
         User admin = userRepository.findByEmail("admin@flexapp.com").orElseThrow();
         User user = userRepository.findByEmail("user@flexapp.com").orElseThrow();
 
-        workScheduleService.createOrUpdateSchedule(
-            admin.getId(),
-            LocalDate.now(),
-            LocalTime.of(8, 0),
-            LocalTime.of(16, 0),
-            30
-        );
+        LocalDate start = LocalDate.now().minusDays(30);
+        LocalDate end = LocalDate.now().plusDays(30);
 
-        workScheduleService.createOrUpdateSchedule(
-                user.getId(),
-                LocalDate.now(),
-                LocalTime.of(8, 0),
-                LocalTime.of(16, 0),
-                30
-        );
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            workScheduleService.createOrUpdateSchedule(
+                    admin.getId(), date, LocalTime.of(8, 0), LocalTime.of(16, 0), 30);
+            workScheduleService.createOrUpdateSchedule(
+                    user.getId(), date, LocalTime.of(8, 0), LocalTime.of(16, 0), 30);
+        }
 
         System.out.println("Admin user: admin@flexapp.com / temp123 / id=" + admin.getId());
         System.out.println("Normal user: user@flexapp.com / temp123 / id=" + user.getId());

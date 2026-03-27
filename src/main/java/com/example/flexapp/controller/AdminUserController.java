@@ -7,7 +7,7 @@ import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.service.AdminUserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -26,7 +26,7 @@ public class AdminUserController {
     }
 
     @PostMapping
-    public UserProfileResponse createUser(@RequestBody CreateUserRequest request) {
+    public UserProfileResponse createUser(@Valid @RequestBody CreateUserRequest request) {
         return adminUserService.createUser(request);
     }
 
