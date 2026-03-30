@@ -21,6 +21,8 @@ import java.util.List;
 @Service
 public class TimeEntryService {
 
+    private static final int MANUAL_ENTRY_MAX_DAYS_BACK = 7;
+
     private final TimeEntryRepository timeEntryRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final FlexCalculationService flexCalculationService;
@@ -43,7 +45,8 @@ public class TimeEntryService {
 
         workScheduleRepository.findByUserIdAndWorkDate(userId, today)
                 .orElseThrow(() -> new BadRequestException(
-                        "No work schedule found for today. Please contact your administrator to create a work schedule."));
+                        "No work schedule found for today. Please contact your administrator to create a work schedule."
+                ));
 
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, today).orElse(null);
 
@@ -140,16 +143,23 @@ public class TimeEntryService {
     public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
         User currentUser = securityService.getCurrentUser();
         Long userId = currentUser.getId();
+        LocalDate today = LocalDate.now();
 
-        validateManualRequest(request);
+        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
+                .orElse(null);
+
+        if (!securityService.isAdmin()) {
+            validateManualRequest(request, today, existingEntry);
+        } else {
+            validateAdminManualRequest(request);
+        }
 
         WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No work schedule found for " + request.getWorkDate()
                 ));
 
-        TimeEntry timeEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
-                .orElseGet(TimeEntry::new);
+        TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
 
         timeEntry.setUser(currentUser);
         timeEntry.setWorkDate(request.getWorkDate());
@@ -157,7 +167,7 @@ public class TimeEntryService {
         timeEntry.setLunchOutTime(request.getLunchOutTime());
         timeEntry.setLunchInTime(request.getLunchInTime());
         timeEntry.setCheckOutTime(request.getCheckOutTime());
-        timeEntry.setComment(request.getComment());
+        timeEntry.setComment(request.getComment() != null ? request.getComment().trim() : null);
         timeEntry.setManualEntry(true);
 
         applyCalculatedFields(timeEntry, schedule);
@@ -194,13 +204,59 @@ public class TimeEntryService {
         return new FlexBalanceResponse(userId, totalFlexMinutes);
     }
 
-    private void validateManualRequest(ManualTimeEntryRequest request) {
+    private void validateManualRequest(ManualTimeEntryRequest request,
+                                       LocalDate today,
+                                       TimeEntry existingEntry) {
         if (request.getWorkDate() == null) {
             throw new BadRequestException("Work date is required.");
         }
 
+        LocalDate earliestAllowedDate = today.minusDays(MANUAL_ENTRY_MAX_DAYS_BACK);
+
+        if (request.getWorkDate().isAfter(today)) {
+            throw new BadRequestException("Manual entries cannot be registered for a future date.");
+        }
+
+        if (request.getWorkDate().isBefore(earliestAllowedDate)) {
+            throw new BadRequestException(
+                    "Manual entries can only be registered up to " + MANUAL_ENTRY_MAX_DAYS_BACK + " days back."
+            );
+        }
+
+        if (existingEntry != null) {
+            throw new BadRequestException("A time entry already exists for this date and cannot be overwritten.");
+        }
+
+        if (request.getComment() == null || request.getComment().isBlank()) {
+            throw new BadRequestException("Comment is required for manual entries.");
+        }
+
+        if (request.getComment().trim().length() < 10) {
+            throw new BadRequestException("Comment must be at least 10 characters long.");
+        }
+
+        validateCommonManualRequest(request);
+    }
+
+    private void validateAdminManualRequest(ManualTimeEntryRequest request) {
+        if (request.getWorkDate() == null) {
+            throw new BadRequestException("Work date is required.");
+        }
+
+        validateCommonManualRequest(request);
+    }
+
+    private void validateCommonManualRequest(ManualTimeEntryRequest request) {
         if (request.getCheckInTime() == null || request.getCheckOutTime() == null) {
             throw new BadRequestException("Check-in time and check-out time are required.");
+        }
+
+        if (!request.getCheckInTime().toLocalDate().equals(request.getWorkDate())) {
+            throw new BadRequestException("Check-in time must match the selected work date.");
+        }
+
+        if (!request.getCheckOutTime().toLocalDate().equals(request.getWorkDate())) {
+            throw new BadRequestException("Check-out time must match the selected work date.");
         }
 
         if (!request.getCheckOutTime().isAfter(request.getCheckInTime())) {
@@ -213,6 +269,16 @@ public class TimeEntryService {
 
         if (request.getLunchOutTime() == null && request.getLunchInTime() != null) {
             throw new BadRequestException("Lunch out time is required when lunch in time is provided.");
+        }
+
+        if (request.getLunchOutTime() != null
+                && !request.getLunchOutTime().toLocalDate().equals(request.getWorkDate())) {
+            throw new BadRequestException("Lunch out time must match the selected work date.");
+        }
+
+        if (request.getLunchInTime() != null
+                && !request.getLunchInTime().toLocalDate().equals(request.getWorkDate())) {
+            throw new BadRequestException("Lunch in time must match the selected work date.");
         }
 
         if (request.getLunchOutTime() != null && request.getLunchInTime() != null) {

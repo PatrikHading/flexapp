@@ -239,16 +239,29 @@ export const updateUserAsAdmin = async (userId, { firstName, lastName, email, ro
 export const createManualTimeEntry = async ({ workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
     const headers = await buildCsrfHeaders(true);
 
+    const payload = {
+        workDate,
+        checkInTime,
+        lunchOutTime,
+        lunchInTime,
+        checkOutTime,
+        comment,
+    };
+
+    console.log("Manual time entry payload:", payload);
+    console.log("Manual time entry JSON:", JSON.stringify(payload));
+
     const response = await fetch(`${API_BASE_URL}/api/time/manual`, {
         method: "POST",
         credentials: "include",
         headers,
-        body: JSON.stringify({ workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
         if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
+        console.error("Manual time entry backend error:", errorText);
         throw new Error(errorText || "Kunde inte spara manuell tidrapport.");
     }
 

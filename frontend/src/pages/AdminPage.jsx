@@ -245,7 +245,7 @@ function AdminPage() {
         try {
             setManualLoading(true);
 
-            await createManualTimeEntry(Number(manualUserId), {
+            await createManualTimeEntry({
                 workDate: manualWorkDate,
                 checkInTime: combineDateAndTime(manualWorkDate, manualCheckIn),
                 lunchOutTime: combineDateAndTime(manualWorkDate, manualLunchOut),
