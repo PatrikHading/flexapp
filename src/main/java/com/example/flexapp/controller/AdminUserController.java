@@ -3,8 +3,11 @@ package com.example.flexapp.controller;
 import com.example.flexapp.dto.AdminChangePasswordRequest;
 import com.example.flexapp.dto.AdminUpdateUserRequest;
 import com.example.flexapp.dto.CreateUserRequest;
+import com.example.flexapp.dto.ManualTimeEntryRequest;
+import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.service.AdminUserService;
+import com.example.flexapp.service.TimeEntryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -15,9 +18,12 @@ import java.util.List;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final TimeEntryService timeEntryService;
 
-    public AdminUserController(AdminUserService adminUserService) {
+    public AdminUserController(AdminUserService adminUserService,
+                               TimeEntryService timeEntryService) {
         this.adminUserService = adminUserService;
+        this.timeEntryService = timeEntryService;
     }
 
     @GetMapping
@@ -34,6 +40,12 @@ public class AdminUserController {
     public UserProfileResponse updateUser(@PathVariable Long id,
                                           @RequestBody AdminUpdateUserRequest request) {
         return adminUserService.updateUser(id, request);
+    }
+
+    @PostMapping("/{id}/time/manual")
+    public TimeEntryResponse registerManualEntryForUser(@PathVariable Long id,
+                                                        @Valid @RequestBody ManualTimeEntryRequest request) {
+        return timeEntryService.registerManualEntryAsAdmin(id, request);
     }
 
     @PutMapping("/{id}/password")

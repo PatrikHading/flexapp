@@ -268,6 +268,35 @@ export const createManualTimeEntry = async ({ workDate, checkInTime, lunchOutTim
     return await response.json();
 };
 
+export const createManualTimeEntryAsAdmin = async (userId, { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
+    const headers = await buildCsrfHeaders(true);
+
+    const payload = {
+        workDate,
+        checkInTime,
+        lunchOutTime,
+        lunchInTime,
+        checkOutTime,
+        comment,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/time/manual`, {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) throw new Error("Sessionen har gått ut.");
+        if (response.status === 403) throw new Error("Du har inte behörighet att registrera manuell tid åt användare.");
+        const errorText = await response.text();
+        throw new Error(errorText || "Kunde inte spara manuell tidrapport för användaren.");
+    }
+
+    return await response.json();
+};
+
 export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
     const headers = await buildCsrfHeaders(true);
 

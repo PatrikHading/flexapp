@@ -3,7 +3,7 @@ import {
     fetchAllUsers,
     createUserAsAdmin,
     updateUserAsAdmin,
-    createManualTimeEntry,
+    createManualTimeEntryAsAdmin,
     resetUserPasswordAsAdmin,
     saveUserScheduleAsAdmin,
     createRecurringSchedulesAsAdmin,
@@ -245,7 +245,7 @@ function AdminPage() {
         try {
             setManualLoading(true);
 
-            await createManualTimeEntry({
+            await createManualTimeEntryAsAdmin(Number(manualUserId), {
                 workDate: manualWorkDate,
                 checkInTime: combineDateAndTime(manualWorkDate, manualCheckIn),
                 lunchOutTime: combineDateAndTime(manualWorkDate, manualLunchOut),

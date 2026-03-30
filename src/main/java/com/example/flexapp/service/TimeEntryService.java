@@ -10,6 +10,7 @@ import com.example.flexapp.enums.TimeEntryStatus;
 import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.TimeEntryRepository;
+import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
@@ -24,15 +25,18 @@ public class TimeEntryService {
     private static final int MANUAL_ENTRY_MAX_DAYS_BACK = 7;
 
     private final TimeEntryRepository timeEntryRepository;
+    private final UserRepository userRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final FlexCalculationService flexCalculationService;
     private final SecurityService securityService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository,
+                            UserRepository userRepository,
                             WorkScheduleRepository workScheduleRepository,
                             FlexCalculationService flexCalculationService,
                             SecurityService securityService) {
         this.timeEntryRepository = timeEntryRepository;
+        this.userRepository = userRepository;
         this.workScheduleRepository = workScheduleRepository;
         this.flexCalculationService = flexCalculationService;
         this.securityService = securityService;
@@ -142,26 +146,41 @@ public class TimeEntryService {
 
     public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
         User currentUser = securityService.getCurrentUser();
-        Long userId = currentUser.getId();
         LocalDate today = LocalDate.now();
+
+        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(currentUser.getId(), request.getWorkDate())
+                .orElse(null);
+
+        validateManualRequest(request, today, existingEntry);
+
+        return saveManualEntry(currentUser, request, existingEntry);
+    }
+
+    public TimeEntryResponse registerManualEntryAsAdmin(Long userId, ManualTimeEntryRequest request) {
+        securityService.validateAdminAccess();
+
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
                 .orElse(null);
 
-        if (!securityService.isAdmin()) {
-            validateManualRequest(request, today, existingEntry);
-        } else {
-            validateAdminManualRequest(request);
-        }
+        validateAdminManualRequest(request);
 
-        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
+        return saveManualEntry(targetUser, request, existingEntry);
+    }
+
+    private TimeEntryResponse saveManualEntry(User targetUser,
+                                              ManualTimeEntryRequest request,
+                                              TimeEntry existingEntry) {
+        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(targetUser.getId(), request.getWorkDate())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No work schedule found for " + request.getWorkDate()
                 ));
 
         TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
 
-        timeEntry.setUser(currentUser);
+        timeEntry.setUser(targetUser);
         timeEntry.setWorkDate(request.getWorkDate());
         timeEntry.setCheckInTime(request.getCheckInTime());
         timeEntry.setLunchOutTime(request.getLunchOutTime());
