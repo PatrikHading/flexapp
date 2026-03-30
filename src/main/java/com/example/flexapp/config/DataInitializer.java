@@ -8,11 +8,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Component
-@Profile("dev")
+@Profile("seed")
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -34,14 +35,16 @@ public class DataInitializer implements CommandLineRunner {
                 "Admin",
                 "User",
                 "temp123",
-                Role.ADMIN);
+                Role.ADMIN
+        );
 
         createOrUpdateUser(
                 "user@flexapp.com",
                 "Normal",
                 "User",
                 "temp123",
-                Role.USER);
+                Role.USER
+        );
 
         User admin = userRepository.findByEmail("admin@flexapp.com").orElseThrow();
         User user = userRepository.findByEmail("user@flexapp.com").orElseThrow();
@@ -51,13 +54,21 @@ public class DataInitializer implements CommandLineRunner {
 
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
             workScheduleService.createOrUpdateSchedule(
-                    admin.getId(), date, LocalTime.of(8, 0), LocalTime.of(16, 0), 30);
-            workScheduleService.createOrUpdateSchedule(
-                    user.getId(), date, LocalTime.of(8, 0), LocalTime.of(16, 0), 30);
-        }
+                    admin.getId(),
+                    date,
+                    LocalTime.of(8, 0),
+                    LocalTime.of(16, 0),
+                    30
+            );
 
-        System.out.println("Admin user: admin@flexapp.com / temp123 / id=" + admin.getId());
-        System.out.println("Normal user: user@flexapp.com / temp123 / id=" + user.getId());
+            workScheduleService.createOrUpdateSchedule(
+                    user.getId(),
+                    date,
+                    LocalTime.of(8, 0),
+                    LocalTime.of(16, 0),
+                    30
+            );
+        }
     }
 
     private void createOrUpdateUser(String email,
@@ -77,13 +88,12 @@ public class DataInitializer implements CommandLineRunner {
         user.setActive(true);
 
         if (user.getPassword() == null
-                || !user.getPassword().startsWith("$2a$")
+                || (!user.getPassword().startsWith("$2a$")
                 && !user.getPassword().startsWith("$2b$")
-                && !user.getPassword().startsWith("$2y$")) {
+                && !user.getPassword().startsWith("$2y$"))) {
             user.setPassword(passwordEncoder.encode(rawPassword));
-
         }
+
         userRepository.save(user);
     }
 }
-
