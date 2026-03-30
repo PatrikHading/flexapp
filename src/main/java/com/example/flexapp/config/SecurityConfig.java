@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableMethodSecurity
@@ -22,7 +23,7 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     public SecurityConfig(CustomUserDetailsService customUserDetailsService,
-                          JwtFilter jwtFilter) {  // ← add to constructor
+                          JwtFilter jwtFilter) {
         this.customUserDetailsService = customUserDetailsService;
         this.jwtFilter = jwtFilter;
     }
@@ -31,7 +32,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                )
                 .userDetailsService(customUserDetailsService)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
@@ -39,7 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/time/**", "/api/schedules/**", "/api/users/**").authenticated()
                         .anyRequest()
                         .authenticated()
-                ).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -52,5 +56,4 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
-
 }

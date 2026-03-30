@@ -1,15 +1,51 @@
 const API_BASE_URL = "http://localhost:8080";
 
+const fetchCsrfToken = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/auth/csrf`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        throw new Error("Kunde inte hämta CSRF-token.");
+    }
+
+    const data = await response.json();
+
+    if (!data?.token) {
+        throw new Error("CSRF-token saknas i backend-responsen.");
+    }
+
+    return data.token;
+};
+
+const buildCsrfHeaders = async (includeJsonContentType = false) => {
+    const csrfToken = await fetchCsrfToken();
+
+    const headers = {};
+
+    if (includeJsonContentType) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    headers["X-XSRF-TOKEN"] = csrfToken;
+
+    return headers;
+};
+
 export const loginUser = async (email, password) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
         if (response.status === 401) throw new Error("Fel e-post eller lösenord.");
+        if (response.status === 403) throw new Error("CSRF-skydd blockerade inloggningen.");
         throw new Error("Något gick fel vid inloggning.");
     }
 
@@ -17,9 +53,12 @@ export const loginUser = async (email, password) => {
 };
 
 export const logoutUser = async () => {
+    const headers = await buildCsrfHeaders(false);
+
     await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
+        headers,
     });
 };
 
@@ -61,9 +100,12 @@ export const fetchTodayTimeEntry = async (userId) => {
 };
 
 export const postTimeAction = async (userId, action) => {
+    const headers = await buildCsrfHeaders(false);
+
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/${action}`, {
         method: "POST",
         credentials: "include",
+        headers,
     });
 
     if (!response.ok) {
@@ -90,10 +132,12 @@ export const fetchTimeHistory = async (userId) => {
 };
 
 export const changePassword = async (currentPassword, newPassword) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/users/me/password`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ currentPassword, newPassword }),
     });
 
@@ -134,10 +178,12 @@ export const fetchAllUsers = async () => {
 };
 
 export const updateMyProfile = async ({ firstName, lastName, email }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/users/me`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ firstName, lastName, email }),
     });
 
@@ -151,10 +197,12 @@ export const updateMyProfile = async ({ firstName, lastName, email }) => {
 };
 
 export const createUserAsAdmin = async ({ firstName, lastName, email, password, role, active }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ firstName, lastName, email, password, role, active }),
     });
 
@@ -169,10 +217,12 @@ export const createUserAsAdmin = async ({ firstName, lastName, email, password, 
 };
 
 export const updateUserAsAdmin = async (userId, { firstName, lastName, email, role, active }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ firstName, lastName, email, role, active }),
     });
 
@@ -187,10 +237,12 @@ export const updateUserAsAdmin = async (userId, { firstName, lastName, email, ro
 };
 
 export const createManualTimeEntry = async (userId, { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/time/${userId}/manual`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }),
     });
 
@@ -204,10 +256,12 @@ export const createManualTimeEntry = async (userId, { workDate, checkInTime, lun
 };
 
 export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/password`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ newPassword }),
     });
 
@@ -222,10 +276,12 @@ export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
 };
 
 export const saveUserScheduleAsAdmin = async (userId, { workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }),
     });
 
@@ -240,10 +296,12 @@ export const saveUserScheduleAsAdmin = async (userId, { workDate, plannedStartTi
 };
 
 export const createRecurringSchedulesAsAdmin = async (userId, { startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }) => {
+    const headers = await buildCsrfHeaders(true);
+
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/schedules/recurring`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ startDate, endDate, plannedStartTime, plannedEndTime, paidLunchMinutes }),
     });
 

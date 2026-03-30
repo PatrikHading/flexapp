@@ -1,6 +1,7 @@
 package com.example.flexapp.dto;
 
 import com.example.flexapp.enums.Role;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.constraints.Email;
@@ -22,6 +23,7 @@ public class CreateUserRequest {
     private String email;
 
     @NotBlank(message = "Password is required.")
+    @Size(min = 12, message = "Password must be at least 12 characters long.")
     private String password;
 
     @NotNull(message = "Role is required.")
