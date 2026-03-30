@@ -1,9 +1,9 @@
 package com.example.flexapp.controller;
 
-import com.example.flexapp.dto.WorkScheduleRequest;
 import com.example.flexapp.dto.WorkScheduleResponse;
 import com.example.flexapp.service.WorkScheduleService;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,12 +15,6 @@ public class WorkScheduleController {
 
     public WorkScheduleController(WorkScheduleService workScheduleService) {
         this.workScheduleService = workScheduleService;
-    }
-
-    @PostMapping("/{userId}")
-    public WorkScheduleResponse createOrUpdateSchedule(@PathVariable Long userId,
-                                                       @RequestBody WorkScheduleRequest request) {
-        return workScheduleService.createOrUpdateSchedule(userId, request);
     }
 
     @GetMapping("/{userId}/today")

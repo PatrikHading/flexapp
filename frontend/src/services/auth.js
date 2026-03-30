@@ -291,7 +291,7 @@ export const resetUserPasswordAsAdmin = async (userId, newPassword) => {
 export const saveUserScheduleAsAdmin = async (userId, { workDate, plannedStartTime, plannedEndTime, paidLunchMinutes }) => {
     const headers = await buildCsrfHeaders(true);
 
-    const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/schedules`, {
         method: "POST",
         credentials: "include",
         headers,
