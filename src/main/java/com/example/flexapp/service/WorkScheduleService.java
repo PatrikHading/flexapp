@@ -11,6 +11,7 @@ import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -57,7 +58,7 @@ public class WorkScheduleService {
     }
 
     public WorkScheduleResponse createOrUpdateSchedule(Long userId, WorkScheduleRequest request) {
-        securityService.validateUserAccess(userId);
+        securityService.validateAdminAccess();
 
         WorkSchedule saved = createOrUpdateSchedule(
                 userId,
@@ -71,7 +72,7 @@ public class WorkScheduleService {
     }
 
     public List<WorkScheduleResponse> createRecurringSchedules(Long userId, RecurringWorkScheduleRequest request) {
-        securityService.validateUserAccess(userId);
+        securityService.validateAdminAccess();
 
         validateRecurringScheduleRequest(request);
 
@@ -92,6 +93,7 @@ public class WorkScheduleService {
             }
             currentDate = currentDate.plusDays(1);
         }
+
         return responses;
     }
 

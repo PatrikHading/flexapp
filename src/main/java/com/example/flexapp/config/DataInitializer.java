@@ -1,99 +1,54 @@
 package com.example.flexapp.config;
 
 import com.example.flexapp.entity.User;
-import com.example.flexapp.enums.Role;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.service.WorkScheduleService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Component
-@Profile("seed")
+@Profile({"seed", "dev"})
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final WorkScheduleService workScheduleService;
-    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
-                           WorkScheduleService workScheduleService,
-                           PasswordEncoder passwordEncoder) {
+                           WorkScheduleService workScheduleService) {
         this.userRepository = userRepository;
         this.workScheduleService = workScheduleService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) {
-        createOrUpdateUser(
-                "admin@flexapp.com",
-                "Admin",
-                "User",
-                "temp123",
-                Role.ADMIN
-        );
+        List<User> users = userRepository.findAll();
 
-        createOrUpdateUser(
-                "user@flexapp.com",
-                "Normal",
-                "User",
-                "temp123",
-                Role.USER
-        );
-
-        User admin = userRepository.findByEmail("admin@flexapp.com").orElseThrow();
-        User user = userRepository.findByEmail("user@flexapp.com").orElseThrow();
+        if (users.isEmpty()) {
+            System.out.println("No users found. Skipping schedule seed.");
+            System.out.println("Create the first admin user manually in the database.");
+            return;
+        }
 
         LocalDate start = LocalDate.now().minusDays(30);
         LocalDate end = LocalDate.now().plusDays(30);
 
-        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-            workScheduleService.createOrUpdateSchedule(
-                    admin.getId(),
-                    date,
-                    LocalTime.of(8, 0),
-                    LocalTime.of(16, 0),
-                    30
-            );
-
-            workScheduleService.createOrUpdateSchedule(
-                    user.getId(),
-                    date,
-                    LocalTime.of(8, 0),
-                    LocalTime.of(16, 0),
-                    30
-            );
-        }
-    }
-
-    private void createOrUpdateUser(String email,
-                                    String firstName,
-                                    String lastName,
-                                    String rawPassword,
-                                    Role role) {
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail(email);
-            return newUser;
-        });
-
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setRole(role);
-        user.setActive(true);
-
-        if (user.getPassword() == null
-                || (!user.getPassword().startsWith("$2a$")
-                && !user.getPassword().startsWith("$2b$")
-                && !user.getPassword().startsWith("$2y$"))) {
-            user.setPassword(passwordEncoder.encode(rawPassword));
+        for (User user : users) {
+            for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+                workScheduleService.createOrUpdateSchedule(
+                        user.getId(),
+                        date,
+                        LocalTime.of(8, 0),
+                        LocalTime.of(16, 0),
+                        30
+                );
+            }
         }
 
-        userRepository.save(user);
+        System.out.println("Seeded default schedules for existing users in dev/seed profile.");
     }
 }

@@ -47,4 +47,9 @@ public class SecurityService {
         return getCurrentUser().getRole() == Role.ADMIN;
     }
 
+    public void validateAdminAccess() {
+        if (!isAdmin()) {
+            throw new AccessDeniedException("Only admins can perform this action.");
+        }
+    }
 }
