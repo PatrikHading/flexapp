@@ -51,7 +51,7 @@ public class AuthController {
                                       HttpServletRequest httpRequest,
                                       HttpServletResponse response) {
 
-        String clientIp = extractClientIp(httpRequest);
+        String clientIp = httpRequest.getRemoteAddr();
 
         if (!rateLimiter.isAllowed(clientIp)) {
             return ResponseEntity.status(429).build();
@@ -88,16 +88,6 @@ public class AuthController {
         response.addHeader("Set-Cookie", cookieValue);
 
         return ResponseEntity.ok().build();
-    }
-
-    private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-
-        return request.getRemoteAddr();
     }
 
     public static class CsrfTokenResponse {
