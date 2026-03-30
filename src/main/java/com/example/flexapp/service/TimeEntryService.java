@@ -10,7 +10,6 @@ import com.example.flexapp.enums.TimeEntryStatus;
 import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.TimeEntryRepository;
-import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
@@ -23,44 +22,38 @@ import java.util.List;
 public class TimeEntryService {
 
     private final TimeEntryRepository timeEntryRepository;
-    private final UserRepository userRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final FlexCalculationService flexCalculationService;
     private final SecurityService securityService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository,
-                            UserRepository userRepository,
                             WorkScheduleRepository workScheduleRepository,
                             FlexCalculationService flexCalculationService,
                             SecurityService securityService) {
         this.timeEntryRepository = timeEntryRepository;
-        this.userRepository = userRepository;
         this.workScheduleRepository = workScheduleRepository;
         this.flexCalculationService = flexCalculationService;
         this.securityService = securityService;
     }
 
-    public TimeEntryResponse checkIn(Long userId) {
-        securityService.validateUserAccess(userId);
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
+    public TimeEntryResponse checkIn() {
+        User currentUser = securityService.getCurrentUser();
+        Long userId = currentUser.getId();
         LocalDate today = LocalDate.now();
 
         workScheduleRepository.findByUserIdAndWorkDate(userId, today)
                 .orElseThrow(() -> new BadRequestException(
-                        "No work schedule found for user " + userId + " on " + today + ". Please contact your administrator to create a work schedule."));
+                        "No work schedule found for today. Please contact your administrator to create a work schedule."));
 
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, today).orElse(null);
 
         if (existingEntry != null && existingEntry.getCheckInTime() != null) {
-            throw new BadRequestException("User is already checked in for today.");
+            throw new BadRequestException("You are already checked in for today.");
         }
 
         TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
 
-        timeEntry.setUser(user);
+        timeEntry.setUser(currentUser);
         timeEntry.setWorkDate(today);
         timeEntry.setCheckInTime(LocalDateTime.now());
         timeEntry.setStatus(TimeEntryStatus.OPEN);
@@ -69,17 +62,16 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse lunchOut(Long userId) {
-        securityService.validateUserAccess(userId);
-
-        TimeEntry timeEntry = getTodayEntryEntity(userId);
+    public TimeEntryResponse lunchOut() {
+        User currentUser = securityService.getCurrentUser();
+        TimeEntry timeEntry = getTodayEntryEntity(currentUser.getId());
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new BadRequestException("User must check in before starting lunch.");
+            throw new BadRequestException("You must check in before starting lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new BadRequestException("User has already checked out for today.");
+            throw new BadRequestException("You have already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null) {
@@ -92,17 +84,16 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse lunchIn(Long userId) {
-        securityService.validateUserAccess(userId);
-
-        TimeEntry timeEntry = getTodayEntryEntity(userId);
+    public TimeEntryResponse lunchIn() {
+        User currentUser = securityService.getCurrentUser();
+        TimeEntry timeEntry = getTodayEntryEntity(currentUser.getId());
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new BadRequestException("User must check in before ending lunch.");
+            throw new BadRequestException("You must check in before ending lunch.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new BadRequestException("User has already checked out for today.");
+            throw new BadRequestException("You have already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() == null) {
@@ -119,21 +110,21 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse checkOut(Long userId) {
-        securityService.validateUserAccess(userId);
-
+    public TimeEntryResponse checkOut() {
+        User currentUser = securityService.getCurrentUser();
+        Long userId = currentUser.getId();
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
         if (timeEntry.getCheckInTime() == null) {
-            throw new BadRequestException("User must check in before checking out.");
+            throw new BadRequestException("You must check in before checking out.");
         }
 
         if (timeEntry.getCheckOutTime() != null) {
-            throw new BadRequestException("User has already checked out for today.");
+            throw new BadRequestException("You have already checked out for today.");
         }
 
         if (timeEntry.getLunchOutTime() != null && timeEntry.getLunchInTime() == null) {
-            throw new BadRequestException("User cannot check out while lunch is active.");
+            throw new BadRequestException("You cannot check out while lunch is active.");
         }
 
         timeEntry.setCheckOutTime(LocalDateTime.now());
@@ -146,23 +137,21 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse registerManualEntry(Long userId, ManualTimeEntryRequest request) {
-        securityService.validateUserAccess(userId);
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
+        User currentUser = securityService.getCurrentUser();
+        Long userId = currentUser.getId();
 
         validateManualRequest(request);
 
         WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "No work schedule found for userId " + userId + " and date " + request.getWorkDate()
+                        "No work schedule found for " + request.getWorkDate()
                 ));
 
         TimeEntry timeEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
                 .orElseGet(TimeEntry::new);
 
-        timeEntry.setUser(user);
+        timeEntry.setUser(currentUser);
         timeEntry.setWorkDate(request.getWorkDate());
         timeEntry.setCheckInTime(request.getCheckInTime());
         timeEntry.setLunchOutTime(request.getLunchOutTime());
@@ -177,24 +166,23 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse getTodayEntry(Long userId) {
-        securityService.validateUserAccess(userId);
-        return toResponse(getTodayEntryEntity(userId));
+    public TimeEntryResponse getTodayEntry() {
+        User currentUser = securityService.getCurrentUser();
+        return toResponse(getTodayEntryEntity(currentUser.getId()));
     }
 
-    public List<TimeEntryResponse> getHistory(Long userId) {
-        securityService.validateUserAccess(userId);
-        validateUserExists(userId);
+    public List<TimeEntryResponse> getHistory() {
+        User currentUser = securityService.getCurrentUser();
 
-        return timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
+        return timeEntryRepository.findByUserIdOrderByWorkDateDesc(currentUser.getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public FlexBalanceResponse getFlexBalance(Long userId) {
-        securityService.validateUserAccess(userId);
-        validateUserExists(userId);
+    public FlexBalanceResponse getFlexBalance() {
+        User currentUser = securityService.getCurrentUser();
+        Long userId = currentUser.getId();
 
         int totalFlexMinutes = timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
                 .stream()
@@ -204,12 +192,6 @@ public class TimeEntryService {
                 .sum();
 
         return new FlexBalanceResponse(userId, totalFlexMinutes);
-    }
-
-    private void validateUserExists(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
     }
 
     private void validateManualRequest(ManualTimeEntryRequest request) {

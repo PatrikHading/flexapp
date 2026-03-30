@@ -18,46 +18,43 @@ public class TimeEntryController {
         this.timeEntryService = timeEntryService;
     }
 
-    @PostMapping("/{userId}/check-in")
-    public TimeEntryResponse checkIn(@PathVariable Long userId) {
-        return timeEntryService.checkIn(userId);
+    @PostMapping("/check-in")
+    public TimeEntryResponse checkIn() {
+        return timeEntryService.checkIn();
     }
 
-    @PostMapping("/{userId}/lunch-out")
-    public TimeEntryResponse lunchOut(@PathVariable Long userId) {
-        return timeEntryService.lunchOut(userId);
+    @PostMapping("/lunch-out")
+    public TimeEntryResponse lunchOut() {
+        return timeEntryService.lunchOut();
     }
 
-    @PostMapping("/{userId}/lunch-in")
-    public TimeEntryResponse lunchIn(@PathVariable Long userId) {
-        return timeEntryService.lunchIn(userId);
+    @PostMapping("/lunch-in")
+    public TimeEntryResponse lunchIn() {
+        return timeEntryService.lunchIn();
     }
 
-    @PostMapping("/{userId}/check-out")
-    public TimeEntryResponse checkOut(@PathVariable Long userId) {
-        return timeEntryService.checkOut(userId);
+    @PostMapping("/check-out")
+    public TimeEntryResponse checkOut() {
+        return timeEntryService.checkOut();
     }
 
-    @PostMapping("/{userId}/manual")
-    public TimeEntryResponse registerManualEntry(@PathVariable Long userId,
-                                                 @Valid @RequestBody ManualTimeEntryRequest request) {
-        return timeEntryService.registerManualEntry(userId, request);
+    @PostMapping("/manual")
+    public TimeEntryResponse registerManualEntry(@Valid @RequestBody ManualTimeEntryRequest request) {
+        return timeEntryService.registerManualEntry(request);
     }
 
-    @GetMapping("/{userId}/today")
-    public TimeEntryResponse getTodayEntry(@PathVariable Long userId) {
-        return timeEntryService.getTodayEntry(userId);
+    @GetMapping("/today")
+    public TimeEntryResponse getTodayEntry() {
+        return timeEntryService.getTodayEntry();
     }
 
-    @GetMapping("/{userId}/history")
-    public List<TimeEntryResponse> getHistory(@PathVariable Long userId) {
-        return timeEntryService.getHistory(userId);
+    @GetMapping("/history")
+    public List<TimeEntryResponse> getHistory() {
+        return timeEntryService.getHistory();
     }
 
-    @GetMapping("/{userId}/flex-balance")
-    public FlexBalanceResponse getFlexBalance(@PathVariable Long userId) {
-        return timeEntryService.getFlexBalance(userId);
+    @GetMapping("/flex-balance")
+    public FlexBalanceResponse getFlexBalance() {
+        return timeEntryService.getFlexBalance();
     }
-
-
 }

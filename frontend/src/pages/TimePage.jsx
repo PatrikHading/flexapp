@@ -48,7 +48,7 @@ function TimePage({ user }) {
             setLoading(true);
             setError("");
 
-            const data = await fetchTodayTimeEntry(user.id);
+            const data = await fetchTodayTimeEntry();
             setTimeEntry(data);
         } catch (err) {
             setError(err.message);
@@ -68,7 +68,7 @@ function TimePage({ user }) {
             setError("");
             setActionLoading(action);
 
-            const updatedEntry = await postTimeAction(user.id, action);
+            const updatedEntry = await postTimeAction(action);
             setTimeEntry(updatedEntry);
         } catch (err) {
             setError(err.message);
@@ -90,7 +90,7 @@ function TimePage({ user }) {
         try {
             setManualLoading(true);
 
-            await createManualTimeEntry(user.id, {
+            await createManualTimeEntry({
                 workDate: manualWorkDate,
                 checkInTime: combineDateAndTime(manualWorkDate, manualCheckIn),
                 lunchOutTime: combineDateAndTime(manualWorkDate, manualLunchOut),
@@ -107,6 +107,7 @@ function TimePage({ user }) {
             setManualComment("");
 
             setManualSuccess("Manuell tidrapport har sparats.");
+            await loadTodayEntry();
         } catch (err) {
             setManualError(err.message);
         } finally {
@@ -272,51 +273,37 @@ function TimePage({ user }) {
 
                         <div className="app-info-box">
                             <span className="app-label">Check-in</span>
-                            <span className="app-value">
-                {formatDateTime(timeEntry.checkInTime)}
-              </span>
+                            <span className="app-value">{formatDateTime(timeEntry.checkInTime)}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Lunch ut</span>
-                            <span className="app-value">
-                {formatDateTime(timeEntry.lunchOutTime)}
-              </span>
+                            <span className="app-value">{formatDateTime(timeEntry.lunchOutTime)}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Lunch in</span>
-                            <span className="app-value">
-                {formatDateTime(timeEntry.lunchInTime)}
-              </span>
+                            <span className="app-value">{formatDateTime(timeEntry.lunchInTime)}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Check-out</span>
-                            <span className="app-value">
-                {formatDateTime(timeEntry.checkOutTime)}
-              </span>
+                            <span className="app-value">{formatDateTime(timeEntry.checkOutTime)}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Arbetade minuter</span>
-                            <span className="app-value">
-                {timeEntry.workedMinutes ?? "-"}
-              </span>
+                            <span className="app-value">{timeEntry.workedMinutes ?? "-"}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Lunchminuter</span>
-                            <span className="app-value">
-                {timeEntry.lunchMinutes ?? "-"}
-              </span>
+                            <span className="app-value">{timeEntry.lunchMinutes ?? "-"}</span>
                         </div>
 
                         <div className="app-info-box">
                             <span className="app-label">Flex minuter</span>
-                            <span className="app-value">
-                {timeEntry.flexMinutes ?? "-"}
-              </span>
+                            <span className="app-value">{timeEntry.flexMinutes ?? "-"}</span>
                         </div>
                     </div>
                 )}

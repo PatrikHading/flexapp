@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 const fetchCsrfToken = async () => {
     const response = await fetch(`${API_BASE_URL}/api/auth/csrf`, {
@@ -85,8 +85,8 @@ export const fetchUserSchedule = async (userId) => {
     return await response.json();
 };
 
-export const fetchTodayTimeEntry = async (userId) => {
-    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/today`, {
+export const fetchTodayTimeEntry = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/time/today`, {
         credentials: "include",
     });
 
@@ -99,10 +99,10 @@ export const fetchTodayTimeEntry = async (userId) => {
     return await response.json();
 };
 
-export const postTimeAction = async (userId, action) => {
+export const postTimeAction = async (action) => {
     const headers = await buildCsrfHeaders(false);
 
-    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/${action}`, {
+    const response = await fetch(`${API_BASE_URL}/api/time/${action}`, {
         method: "POST",
         credentials: "include",
         headers,
@@ -117,8 +117,8 @@ export const postTimeAction = async (userId, action) => {
     return await response.json();
 };
 
-export const fetchTimeHistory = async (userId) => {
-    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/history`, {
+export const fetchTimeHistory = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/time/history`, {
         credentials: "include",
     });
 
@@ -150,8 +150,8 @@ export const changePassword = async (currentPassword, newPassword) => {
     return true;
 };
 
-export const fetchFlexBalance = async (userId) => {
-    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/flex-balance`, {
+export const fetchFlexBalance = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/time/flex-balance`, {
         credentials: "include",
     });
 
@@ -236,10 +236,10 @@ export const updateUserAsAdmin = async (userId, { firstName, lastName, email, ro
     return await response.json();
 };
 
-export const createManualTimeEntry = async (userId, { workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
+export const createManualTimeEntry = async ({ workDate, checkInTime, lunchOutTime, lunchInTime, checkOutTime, comment }) => {
     const headers = await buildCsrfHeaders(true);
 
-    const response = await fetch(`${API_BASE_URL}/api/time/${userId}/manual`, {
+    const response = await fetch(`${API_BASE_URL}/api/time/manual`, {
         method: "POST",
         credentials: "include",
         headers,
