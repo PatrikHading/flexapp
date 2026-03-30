@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { clearAuthHeader } from "../services/auth";
+import { logoutUser } from "../services/auth";
 
 const pageTitles = {
     "/dashboard": "Dashboard",
@@ -14,8 +14,8 @@ function DashboardLayout({ user, setUser }) {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogout = () => {
-        clearAuthHeader();
+    const handleLogout = async () => {
+        await logoutUser();
         setUser(null);
         navigate("/login");
     };

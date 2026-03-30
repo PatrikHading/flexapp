@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     changePassword,
-    clearAuthHeader,
+    logoutUser,
     updateMyProfile,
 } from "../services/auth";
 
@@ -79,8 +79,8 @@ function ProfilePage({ user, setUser }) {
             setNewPassword("");
             setConfirmPassword("");
 
-            setTimeout(() => {
-                clearAuthHeader();
+            setTimeout(async () => {
+                await logoutUser();
                 setUser(null);
                 navigate("/login");
             }, 1500);

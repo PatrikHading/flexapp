@@ -1,11 +1,11 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { clearAuthHeader } from "../services/auth";
+import { logoutUser } from "../services/auth";
 
 function Layout({ user, setUser }) {
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        clearAuthHeader();
+    const handleLogout = async () => {
+        await logoutUser();
         setUser(null);
         navigate("/login");
     };
