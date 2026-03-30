@@ -5,7 +5,6 @@ import com.example.flexapp.entity.User;
 import com.example.flexapp.security.LoginRateLimiter;
 import com.example.flexapp.service.JwtService;
 import com.example.flexapp.service.UserService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -14,7 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -61,12 +64,14 @@ public class AuthController {
         User user = (User) authentication.getPrincipal();
         String token = jwtService.generateToken(user);
 
-        Cookie cookie = new Cookie("jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 8);
-        response.addCookie(cookie);
+        String cookieValue = String.format(
+                "jwt=%s; Path=/; Max-Age=%d; HttpOnly; %s SameSite=Strict",
+                token,
+                60 * 60 * 8,
+                cookieSecure ? "Secure;" : ""
+        );
+
+        response.addHeader("Set-Cookie", cookieValue);
 
         return ResponseEntity.ok().build();
     }
@@ -75,12 +80,12 @@ public class AuthController {
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         userService.invalidateCurrentUserSessions();
 
-        Cookie cookie = new Cookie("jwt", "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        String cookieValue = String.format(
+                "jwt=; Path=/; Max-Age=0; HttpOnly; %s SameSite=Strict",
+                cookieSecure ? "Secure;" : ""
+        );
+
+        response.addHeader("Set-Cookie", cookieValue);
 
         return ResponseEntity.ok().build();
     }
@@ -89,7 +94,7 @@ public class AuthController {
         String forwarded = request.getHeader("X-Forwarded-For");
 
         if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0];
+            return forwarded.split(",")[0].trim();
         }
 
         return request.getRemoteAddr();
