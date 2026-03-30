@@ -3,11 +3,12 @@ package com.example.flexapp.entity;
 import com.example.flexapp.enums.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class User implements UserDetails{
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,9 +46,24 @@ public class User implements UserDetails{
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
+    @Column(name = "token_version")
+    private Integer tokenVersion = 0;
+
     @PrePersist
-    public void prePersist(){
+    public void prePersist() {
         this.createdAt = LocalDateTime.now();
+
+        if (this.tokenVersion == null) {
+            this.tokenVersion = 0;
+        }
+    }
+
+    public int getEffectiveTokenVersion() {
+        return tokenVersion == null ? 0 : tokenVersion;
+    }
+
+    public void incrementTokenVersion() {
+        this.tokenVersion = getEffectiveTokenVersion() + 1;
     }
 
     @Override
@@ -67,12 +83,12 @@ public class User implements UserDetails{
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return active;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        return active;
     }
 
     @Override

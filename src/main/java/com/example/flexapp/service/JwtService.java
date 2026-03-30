@@ -1,6 +1,7 @@
 package com.example.flexapp.service;
 
-import io.jsonwebtoken.Jws;
+import com.example.flexapp.entity.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -13,6 +14,7 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -20,28 +22,48 @@ public class JwtService {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
-    public String generateToken(String email) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .subject(email)
+                .subject(user.getEmail())
+                .claim("tokenVersion", user.getEffectiveTokenVersion())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 8))
+                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 8))
                 .signWith(key())
                 .compact();
     }
 
     public String extractEmail(String token) {
-        return Jwts.parser().verifyWith(key()).build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        return extractClaims(token).getSubject();
+    }
+
+    public int extractTokenVersion(String token) {
+        Object value = extractClaims(token).get("tokenVersion");
+
+        if (value instanceof Integer integerValue) {
+            return integerValue;
+        }
+
+        if (value instanceof Number numberValue) {
+            return numberValue.intValue();
+        }
+
+        return 0;
     }
 
     public boolean isValid(String token) {
         try {
-            Jwts.parser().verifyWith(key()).build().parseSignedClaims(token);
+            extractClaims(token);
             return true;
-        } catch (JwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(key())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

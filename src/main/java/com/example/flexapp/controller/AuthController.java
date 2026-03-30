@@ -1,7 +1,9 @@
 package com.example.flexapp.controller;
 
 import com.example.flexapp.dto.LoginRequest;
+import com.example.flexapp.entity.User;
 import com.example.flexapp.service.JwtService;
+import com.example.flexapp.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -22,13 +24,17 @@ public class AuthController {
 
     private final AuthenticationManager authManager;
     private final JwtService jwtService;
+    private final UserService userService;
 
     @Value("${cookie.secure:false}")
     private boolean cookieSecure;
 
-    public AuthController(AuthenticationManager authManager, JwtService jwtService) {
+    public AuthController(AuthenticationManager authManager,
+                          JwtService jwtService,
+                          UserService userService) {
         this.authManager = authManager;
         this.jwtService = jwtService;
+        this.userService = userService;
     }
 
     @GetMapping("/csrf")
@@ -39,11 +45,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest request,
                                       HttpServletResponse response) {
-        authManager.authenticate(
+        var authentication = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        String token = jwtService.generateToken(request.getEmail());
+        User user = (User) authentication.getPrincipal();
+        String token = jwtService.generateToken(user);
 
         Cookie cookie = new Cookie("jwt", token);
         cookie.setHttpOnly(true);
@@ -57,6 +64,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
+        userService.invalidateCurrentUserSessions();
+
         Cookie cookie = new Cookie("jwt", "");
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);

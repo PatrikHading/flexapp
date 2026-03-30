@@ -12,6 +12,7 @@ import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -99,6 +100,7 @@ public class AdminUserService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.incrementTokenVersion();
         userRepository.save(user);
     }
 
@@ -109,6 +111,7 @@ public class AdminUserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         user.setActive(false);
+        user.incrementTokenVersion();
         userRepository.save(user);
     }
 
@@ -139,8 +142,8 @@ public class AdminUserService {
             throw new BadRequestException("Password is required.");
         }
 
-        if (request.getPassword().length() < 6) {
-            throw new BadRequestException("Password must be at least 6 characters long.");
+        if (request.getPassword().length() < 12) {
+            throw new BadRequestException("Password must be at least 12 characters long.");
         }
 
         if (request.getRole() == null) {
@@ -175,8 +178,8 @@ public class AdminUserService {
             throw new BadRequestException("New password is required.");
         }
 
-        if (request.getNewPassword().length() < 6) {
-            throw new BadRequestException("New password must be at least 6 characters long.");
+        if (request.getNewPassword().length() < 12) {
+            throw new BadRequestException("New password must be at least 12 characters long.");
         }
     }
 

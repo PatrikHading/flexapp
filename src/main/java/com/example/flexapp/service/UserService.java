@@ -61,8 +61,8 @@ public class UserService {
             throw new BadRequestException("New password is required.");
         }
 
-        if (request.getNewPassword().length() < 6) {
-            throw new BadRequestException("New password must be at least 6 characters long.");
+        if (request.getNewPassword().length() < 12) {
+            throw new BadRequestException("New password must be at least 12 characters long.");
         }
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
@@ -74,6 +74,13 @@ public class UserService {
         }
 
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        currentUser.incrementTokenVersion();
+        userRepository.save(currentUser);
+    }
+
+    public void invalidateCurrentUserSessions() {
+        User currentUser = securityService.getCurrentUser();
+        currentUser.incrementTokenVersion();
         userRepository.save(currentUser);
     }
 
