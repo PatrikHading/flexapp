@@ -2,6 +2,7 @@ package com.example.flexapp.entity;
 
 import com.example.flexapp.enums.TimeEntryStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -43,12 +44,15 @@ public class TimeEntry {
     @Column(name = "check_out_time")
     private LocalDateTime checkOutTime;
 
+    @PositiveOrZero
     @Column(name = "worked_minutes")
     private Integer workedMinutes;
 
+    @PositiveOrZero
     @Column(name = "lunch_minutes")
     private Integer lunchMinutes;
 
+    @PositiveOrZero
     @Column(name = "extra_lunch_minutes")
     private Integer extraLunchMinutes;
 
