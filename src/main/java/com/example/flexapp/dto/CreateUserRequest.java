@@ -29,6 +29,5 @@ public class CreateUserRequest {
     @NotNull(message = "Role is required.")
     private Role role;
 
-    @NotNull(message = "Active status is required.")
     private boolean active;
 }
