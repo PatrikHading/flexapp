@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,28 +53,37 @@ public class AuthController {
                                       HttpServletResponse response) {
 
         String clientIp = httpRequest.getRemoteAddr();
+        String email = request.getEmail();
 
-        if (!rateLimiter.isAllowed(clientIp)) {
+        if (rateLimiter.isBlocked(clientIp, email)) {
             return ResponseEntity.status(429).build();
         }
 
-        var authentication = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            var authentication = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
+            );
 
-        User user = (User) authentication.getPrincipal();
-        String token = jwtService.generateToken(user);
+            User user = (User) authentication.getPrincipal();
+            String token = jwtService.generateToken(user);
 
-        String cookieValue = String.format(
-                "jwt=%s; Path=/; Max-Age=%d; HttpOnly; %s SameSite=Strict",
-                token,
-                60 * 60 * 8,
-                cookieSecure ? "Secure;" : ""
-        );
+            rateLimiter.recordSuccess(email);
 
-        response.addHeader("Set-Cookie", cookieValue);
+            String cookieValue = String.format(
+                    "jwt=%s; Path=/; Max-Age=%d; HttpOnly; %s SameSite=Strict",
+                    token,
+                    60 * 60 * 8,
+                    cookieSecure ? "Secure;" : ""
+            );
 
-        return ResponseEntity.ok().build();
+            response.addHeader("Set-Cookie", cookieValue);
+
+            return ResponseEntity.ok().build();
+
+        } catch (AuthenticationException ex) {
+            rateLimiter.recordFailure(clientIp, email);
+            return ResponseEntity.status(401).build();
+        }
     }
 
     @PostMapping("/logout")
