@@ -165,7 +165,7 @@ public class TimeEntryService {
         TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
                 .orElse(null);
 
-        validateAdminManualRequest(request);
+        validateAdminManualRequest(request, existingEntry);
 
         return saveManualEntry(targetUser, request, existingEntry);
     }
@@ -257,9 +257,14 @@ public class TimeEntryService {
         validateCommonManualRequest(request);
     }
 
-    private void validateAdminManualRequest(ManualTimeEntryRequest request) {
+    private void validateAdminManualRequest(ManualTimeEntryRequest request,
+                                            TimeEntry existingEntry) {
         if (request.getWorkDate() == null) {
             throw new BadRequestException("Work date is required.");
+        }
+
+        if (existingEntry != null) {
+            throw new BadRequestException("A time entry already exists for this date and cannot be overwritten.");
         }
 
         validateCommonManualRequest(request);
