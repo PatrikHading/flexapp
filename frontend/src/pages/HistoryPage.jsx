@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchTimeHistory } from "../services/auth";
 
+const PAGE_SIZE = 10;
+
 const formatDateTime = (value) => {
     if (!value) return "-";
 
@@ -30,16 +32,26 @@ function HistoryPage({ user }) {
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
 
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+
     useEffect(() => {
         const loadHistory = async () => {
             try {
                 setLoading(true);
                 setError("");
 
-                const data = await fetchTimeHistory(user.id);
-                setHistoryEntries(Array.isArray(data) ? data : []);
+                const data = await fetchTimeHistory(page, PAGE_SIZE);
+
+                setHistoryEntries(Array.isArray(data?.content) ? data.content : []);
+                setTotalPages(Number.isInteger(data?.totalPages) ? data.totalPages : 0);
+                setTotalElements(Number.isInteger(data?.totalElements) ? data.totalElements : 0);
             } catch (err) {
                 setError(err.message);
+                setHistoryEntries([]);
+                setTotalPages(0);
+                setTotalElements(0);
             } finally {
                 setLoading(false);
             }
@@ -48,7 +60,11 @@ function HistoryPage({ user }) {
         if (user?.id) {
             loadHistory();
         }
-    }, [user]);
+    }, [user, page]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [fromDate, toDate]);
 
     const filteredEntries = useMemo(() => {
         return historyEntries.filter((entry) => {
@@ -122,6 +138,14 @@ function HistoryPage({ user }) {
         URL.revokeObjectURL(url);
     };
 
+    const handlePreviousPage = () => {
+        setPage((currentPage) => Math.max(currentPage - 1, 0));
+    };
+
+    const handleNextPage = () => {
+        setPage((currentPage) => Math.min(currentPage + 1, totalPages - 1));
+    };
+
     if (loading) {
         return (
             <div className="app-card">
@@ -148,6 +172,9 @@ function HistoryPage({ user }) {
                         <h1 className="app-card-title">Historik</h1>
                         <p className="app-card-subtitle">
                             Här ser du dina tidigare tidrapporter.
+                        </p>
+                        <p className="app-card-subtitle">
+                            Totalt antal poster: {totalElements}
                         </p>
                     </div>
 
@@ -200,6 +227,32 @@ function HistoryPage({ user }) {
                 </div>
             </section>
 
+            <section className="app-card">
+                <div className="history-pagination">
+                    <button
+                        className="app-button history-clear-button"
+                        type="button"
+                        onClick={handlePreviousPage}
+                        disabled={page === 0}
+                    >
+                        Föregående
+                    </button>
+
+                    <span className="app-card-subtitle">
+                        Sida {totalPages > 0 ? page + 1 : 0} av {totalPages}
+                    </span>
+
+                    <button
+                        className="app-button"
+                        type="button"
+                        onClick={handleNextPage}
+                        disabled={totalPages === 0 || page >= totalPages - 1}
+                    >
+                        Nästa
+                    </button>
+                </div>
+            </section>
+
             {filteredEntries.length === 0 ? (
                 <section className="app-card">
                     <p className="app-card-subtitle">
@@ -215,18 +268,18 @@ function HistoryPage({ user }) {
                             </div>
 
                             <div className="history-badges">
-                <span
-                    className={`history-badge ${
-                        entry.manualEntry ? "history-badge-manual" : "history-badge-live"
-                    }`}
-                >
-                  {entry.manualEntry ? "Manuell" : "Automatisk"}
-                </span>
+                                <span
+                                    className={`history-badge ${
+                                        entry.manualEntry ? "history-badge-manual" : "history-badge-live"
+                                    }`}
+                                >
+                                    {entry.manualEntry ? "Manuell" : "Automatisk"}
+                                </span>
 
                                 {entry.status && (
                                     <span className="history-badge history-badge-status">
-                    {entry.status}
-                  </span>
+                                        {entry.status}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -235,50 +288,50 @@ function HistoryPage({ user }) {
                             <div className="app-info-box">
                                 <span className="app-label">Check-in</span>
                                 <span className="app-value">
-                  {formatDateTime(entry.checkInTime)}
-                </span>
+                                    {formatDateTime(entry.checkInTime)}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Lunch ut</span>
                                 <span className="app-value">
-                  {formatDateTime(entry.lunchOutTime)}
-                </span>
+                                    {formatDateTime(entry.lunchOutTime)}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Lunch in</span>
                                 <span className="app-value">
-                  {formatDateTime(entry.lunchInTime)}
-                </span>
+                                    {formatDateTime(entry.lunchInTime)}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Check-out</span>
                                 <span className="app-value">
-                  {formatDateTime(entry.checkOutTime)}
-                </span>
+                                    {formatDateTime(entry.checkOutTime)}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Arbetade minuter</span>
                                 <span className="app-value">
-                  {entry.workedMinutes ?? "-"}
-                </span>
+                                    {entry.workedMinutes ?? "-"}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Lunchminuter</span>
                                 <span className="app-value">
-                  {entry.lunchMinutes ?? "-"}
-                </span>
+                                    {entry.lunchMinutes ?? "-"}
+                                </span>
                             </div>
 
                             <div className="app-info-box">
                                 <span className="app-label">Flex minuter</span>
                                 <span className="app-value">
-                  {entry.flexMinutes ?? "-"}
-                </span>
+                                    {entry.flexMinutes ?? "-"}
+                                </span>
                             </div>
                         </div>
 

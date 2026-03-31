@@ -117,13 +117,49 @@ export const postTimeAction = async (action) => {
     return await response.json();
 };
 
-export const fetchTimeHistory = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/time/history`, {
+export const fetchTimeHistory = async (page = 0, size = 10) => {
+    const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sort: "workDate,desc",
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/time/history?${params.toString()}`, {
         credentials: "include",
     });
 
     if (!response.ok) {
-        if (response.status === 404) return [];
+        if (response.status === 404) {
+            return {
+                content: [],
+                empty: true,
+                first: true,
+                last: true,
+                number: 0,
+                numberOfElements: 0,
+                pageable: {
+                    offset: 0,
+                    pageNumber: 0,
+                    pageSize: size,
+                    paged: true,
+                    sort: {
+                        empty: false,
+                        sorted: true,
+                        unsorted: false,
+                    },
+                    unpaged: false,
+                },
+                size,
+                sort: {
+                    empty: false,
+                    sorted: true,
+                    unsorted: false,
+                },
+                totalElements: 0,
+                totalPages: 0,
+            };
+        }
+
         if (response.status === 401) throw new Error("Sessionen har gått ut.");
         throw new Error("Kunde inte hämta historik.");
     }
