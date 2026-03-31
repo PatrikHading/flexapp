@@ -62,7 +62,7 @@ public class TimeEntry {
     private String comment;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20)
     private TimeEntryStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
