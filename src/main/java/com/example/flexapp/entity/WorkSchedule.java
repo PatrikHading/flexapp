@@ -1,12 +1,14 @@
 package com.example.flexapp.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.LocalDate;
 
 @Entity
 @Table(
@@ -36,9 +38,11 @@ public class WorkSchedule {
     @Column(name = "planned_end_time", nullable = false)
     private LocalTime plannedEndTime;
 
+    @PositiveOrZero
     @Column(name = "paid_lunch_minutes", nullable = false)
     private Integer paidLunchMinutes;
 
+    @PositiveOrZero
     @Column(name = "expected_work_minutes", nullable = false)
     private Integer expectedWorkMinutes;
 
@@ -50,7 +54,7 @@ public class WorkSchedule {
     private LocalDateTime createdAt;
 
     @PrePersist
-    public void prePersist(){
+    public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
 }
