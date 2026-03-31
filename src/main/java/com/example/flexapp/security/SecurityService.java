@@ -5,6 +5,7 @@ import com.example.flexapp.enums.Role;
 import com.example.flexapp.exception.AccessDeniedException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.UserRepository;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,13 +22,26 @@ public class SecurityService {
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || authentication.getName() == null) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             throw new AccessDeniedException("No authenticated user found.");
         }
 
-        return userRepository.findByEmail(authentication.getName())
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof User user) {
+            return user;
+        }
+
+        String email = authentication.getName();
+        if (email == null || email.isBlank()) {
+            throw new AccessDeniedException("No authenticated user found.");
+        }
+
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Authenticated user not found: " + authentication.getName()
+                        "Authenticated user not found: " + email
                 ));
     }
 
