@@ -13,6 +13,7 @@ import com.example.flexapp.repository.TimeEntryRepository;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -42,9 +43,11 @@ public class TimeEntryService {
         this.securityService = securityService;
     }
 
+    @Transactional
     public TimeEntryResponse checkIn() {
         User currentUser = securityService.getCurrentUser();
-        Long userId = currentUser.getId();
+        User lockedUser = lockUser(currentUser.getId());
+        Long userId = lockedUser.getId();
         LocalDate today = LocalDate.now();
 
         workScheduleRepository.findByUserIdAndWorkDate(userId, today)
@@ -60,7 +63,7 @@ public class TimeEntryService {
 
         TimeEntry timeEntry = existingEntry != null ? existingEntry : new TimeEntry();
 
-        timeEntry.setUser(currentUser);
+        timeEntry.setUser(lockedUser);
         timeEntry.setWorkDate(today);
         timeEntry.setCheckInTime(LocalDateTime.now());
         timeEntry.setStatus(TimeEntryStatus.OPEN);
@@ -69,8 +72,11 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
+    @Transactional
     public TimeEntryResponse lunchOut() {
         User currentUser = securityService.getCurrentUser();
+        lockUser(currentUser.getId());
+
         TimeEntry timeEntry = getTodayEntryEntity(currentUser.getId());
 
         if (timeEntry.getCheckInTime() == null) {
@@ -91,8 +97,11 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
+    @Transactional
     public TimeEntryResponse lunchIn() {
         User currentUser = securityService.getCurrentUser();
+        lockUser(currentUser.getId());
+
         TimeEntry timeEntry = getTodayEntryEntity(currentUser.getId());
 
         if (timeEntry.getCheckInTime() == null) {
@@ -117,8 +126,11 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
+    @Transactional
     public TimeEntryResponse checkOut() {
         User currentUser = securityService.getCurrentUser();
+        lockUser(currentUser.getId());
+
         Long userId = currentUser.getId();
         TimeEntry timeEntry = getTodayEntryEntity(userId);
 
@@ -342,6 +354,11 @@ public class TimeEntryService {
     private TimeEntry getTodayEntryEntity(Long userId) {
         return timeEntryRepository.findByUserIdAndWorkDate(userId, LocalDate.now())
                 .orElseThrow(() -> new ResourceNotFoundException("No time entry found for today."));
+    }
+
+    private User lockUser(Long userId) {
+        return userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     }
 
     private TimeEntryResponse toResponse(TimeEntry timeEntry) {
