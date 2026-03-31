@@ -2,6 +2,7 @@ package com.example.flexapp.controller;
 
 import com.example.flexapp.dto.LoginRequest;
 import com.example.flexapp.entity.User;
+import com.example.flexapp.security.ClientIpResolver;
 import com.example.flexapp.security.LoginRateLimiter;
 import com.example.flexapp.service.JwtService;
 import com.example.flexapp.service.UserService;
@@ -28,6 +29,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserService userService;
     private final LoginRateLimiter rateLimiter;
+    private final ClientIpResolver clientIpResolver;
 
     @Value("${cookie.secure:false}")
     private boolean cookieSecure;
@@ -35,11 +37,13 @@ public class AuthController {
     public AuthController(AuthenticationManager authManager,
                           JwtService jwtService,
                           UserService userService,
-                          LoginRateLimiter rateLimiter) {
+                          LoginRateLimiter rateLimiter,
+                          ClientIpResolver clientIpResolver) {
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.userService = userService;
         this.rateLimiter = rateLimiter;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @GetMapping("/csrf")
@@ -52,7 +56,7 @@ public class AuthController {
                                       HttpServletRequest httpRequest,
                                       HttpServletResponse response) {
 
-        String clientIp = httpRequest.getRemoteAddr();
+        String clientIp = clientIpResolver.resolveClientIp(httpRequest);
         String email = request.getEmail();
 
         if (rateLimiter.isBlocked(clientIp, email)) {
