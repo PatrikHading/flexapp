@@ -46,7 +46,7 @@ public class User implements UserDetails {
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
-    @Column(name = "token_version")
+    @Column(name = "token_version", nullable = false)
     private Integer tokenVersion = 0;
 
     @PrePersist
