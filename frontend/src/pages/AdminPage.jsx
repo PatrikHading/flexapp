@@ -9,6 +9,8 @@ import {
     createRecurringSchedulesAsAdmin,
 } from "../services/auth";
 
+const MIN_PASSWORD_LENGTH = 12;
+
 function AdminPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,8 +115,8 @@ function AdminPage() {
         setCreateError("");
         setCreateSuccess("");
 
-        if (password.length < 6) {
-            setCreateError("Lösenordet måste vara minst 6 tecken.");
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            setCreateError(`Lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`);
             return;
         }
 
@@ -208,8 +210,8 @@ function AdminPage() {
         setResetPasswordError("");
         setResetPasswordSuccess("");
 
-        if (resetPasswordValue.length < 6) {
-            setResetPasswordError("Lösenordet måste vara minst 6 tecken.");
+        if (resetPasswordValue.length < MIN_PASSWORD_LENGTH) {
+            setResetPasswordError(`Lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`);
             return;
         }
 
@@ -330,15 +332,9 @@ function AdminPage() {
                 paidLunchMinutes: Number(recurringPaidLunchMinutes || 0),
             });
 
-            setCreatedRecurringSchedules(Array.isArray(response) ? response : []);
-            setRecurringSuccess("Återkommande schema har skapats.");
-
-            setRecurringUserId("");
-            setRecurringStartDate("");
-            setRecurringEndDate("");
-            setRecurringStartTime("");
-            setRecurringEndTime("");
-            setRecurringPaidLunchMinutes("30");
+            const schedules = Array.isArray(response) ? response : [];
+            setCreatedRecurringSchedules(schedules);
+            setRecurringSuccess(`${schedules.length} återkommande scheman skapades.`);
         } catch (err) {
             setRecurringError(err.message);
         } finally {
@@ -346,298 +342,67 @@ function AdminPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="app-card">
-                <h1>Admin</h1>
-                <p className="app-card-subtitle">Laddar användare...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="app-card">
-                <h1>Admin</h1>
-                <p className="app-message-error">{error}</p>
-            </div>
-        );
-    }
-
     return (
         <div className="page-section">
             <section className="app-card-hero">
-                <h1 className="app-card-title">Admin</h1>
+                <h1 className="app-card-title">Adminpanel</h1>
                 <p className="app-card-subtitle">
-                    Här kan du hantera användare, schema, manuella registreringar och lösenord.
+                    Hantera användare, scheman och manuella tidsregistreringar.
                 </p>
             </section>
 
-            <section className="app-grid">
-                <div className="app-card">
-                    <h2>Översikt</h2>
-                    <div className="app-grid">
-                        <div className="app-info-box">
-                            <span className="app-label">Totalt antal användare</span>
-                            <span className="app-value">{stats.totalUsers}</span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Admins</span>
-                            <span className="app-value">{stats.adminCount}</span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Vanliga användare</span>
-                            <span className="app-value">{stats.regularUserCount}</span>
-                        </div>
-
-                        <div className="app-info-box">
-                            <span className="app-label">Aktiva konton</span>
-                            <span className="app-value">{stats.activeCount}</span>
-                        </div>
-                    </div>
+            <section className="admin-stats-grid">
+                <div className="app-info-box">
+                    <span className="app-label">Totalt antal användare</span>
+                    <span className="app-value">{stats.totalUsers}</span>
+                </div>
+                <div className="app-info-box">
+                    <span className="app-label">Administratörer</span>
+                    <span className="app-value">{stats.adminCount}</span>
+                </div>
+                <div className="app-info-box">
+                    <span className="app-label">Vanliga användare</span>
+                    <span className="app-value">{stats.regularUserCount}</span>
+                </div>
+                <div className="app-info-box">
+                    <span className="app-label">Aktiva</span>
+                    <span className="app-value">{stats.activeCount}</span>
                 </div>
             </section>
 
             <section className="app-card">
-                <h2>Användare</h2>
-                <p className="app-card-subtitle">
-                    Se alla användare och välj en användare för redigering.
-                </p>
-
-                {users.length === 0 ? (
-                    <p className="app-card-subtitle">Inga användare hittades.</p>
-                ) : (
-                    <div className="admin-user-list">
-                        {users.map((user) => (
-                            <div key={user.id} className="app-info-box">
-                                <span className="app-label">Namn</span>
-                                <span className="app-value">
-                  {user.firstName} {user.lastName}
-                </span>
-
-                                <span className="app-label">E-post</span>
-                                <span className="app-value">{user.email}</span>
-
-                                <span className="app-label">Roll</span>
-                                <span className="app-value">{user.role}</span>
-
-                                <span className="app-label">Status</span>
-                                <span className="app-value">
-                  {user.active ? "Aktiv" : "Inaktiv"}
-                </span>
-
-                                <button
-                                    className="app-button admin-edit-button"
-                                    type="button"
-                                    onClick={() => handleSelectUser(user)}
-                                >
-                                    Redigera
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-
-            <section className="app-card">
-                <h2>Redigera användare</h2>
-                <p className="app-card-subtitle">
-                    Uppdatera vald användares uppgifter eller återställ lösenord.
-                </p>
-
-                {!selectedUserId ? (
-                    <p className="app-card-subtitle">
-                        Ingen användare vald ännu. Klicka på “Redigera” i listan ovan.
-                    </p>
-                ) : (
-                    <>
-                        <form className="profile-form" onSubmit={handleUpdateUser}>
-                            <div className="profile-form-grid">
-                                <div>
-                                    <label className="app-label">Förnamn</label>
-                                    <input
-                                        className="app-input"
-                                        type="text"
-                                        value={editFirstName}
-                                        onChange={(e) => setEditFirstName(e.target.value)}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="app-label">Efternamn</label>
-                                    <input
-                                        className="app-input"
-                                        type="text"
-                                        value={editLastName}
-                                        onChange={(e) => setEditLastName(e.target.value)}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="profile-form-full">
-                                    <label className="app-label">E-post</label>
-                                    <input
-                                        className="app-input"
-                                        type="email"
-                                        value={editEmail}
-                                        onChange={(e) => setEditEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="app-label">Roll</label>
-                                    <select
-                                        className="app-input"
-                                        value={editRole}
-                                        onChange={(e) => setEditRole(e.target.value)}
-                                    >
-                                        <option value="USER">USER</option>
-                                        <option value="ADMIN">ADMIN</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="app-label">Status</label>
-                                    <label className="admin-checkbox-row admin-checkbox-spacer">
-                                        <input
-                                            type="checkbox"
-                                            checked={editActive}
-                                            onChange={(e) => setEditActive(e.target.checked)}
-                                        />
-                                        <span>Aktivt konto</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="profile-form-actions">
-                                <button className="app-button" type="submit" disabled={editLoading}>
-                                    {editLoading ? "Sparar..." : "Spara ändringar"}
-                                </button>
-                            </div>
-
-                            {editError && <p className="app-message-error">{editError}</p>}
-                            {editSuccess && <p className="app-message-success">{editSuccess}</p>}
-                        </form>
-
-                        <div className="admin-section-divider" />
-
-                        <form className="profile-form" onSubmit={handleResetPassword}>
-                            <h3>Återställ lösenord</h3>
-                            <p className="app-card-subtitle">
-                                Ange ett nytt lösenord för den valda användaren.
-                            </p>
-
-                            <div className="profile-form-grid">
-                                <div className="profile-form-full">
-                                    <label className="app-label">Nytt lösenord</label>
-                                    <input
-                                        className="app-input"
-                                        type="password"
-                                        value={resetPasswordValue}
-                                        onChange={(e) => setResetPasswordValue(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="profile-form-actions">
-                                <button
-                                    className="app-button"
-                                    type="submit"
-                                    disabled={resetPasswordLoading}
-                                >
-                                    {resetPasswordLoading ? "Sparar..." : "Uppdatera lösenord"}
-                                </button>
-                            </div>
-
-                            {resetPasswordError && (
-                                <p className="app-message-error">{resetPasswordError}</p>
-                            )}
-                            {resetPasswordSuccess && (
-                                <p className="app-message-success">{resetPasswordSuccess}</p>
-                            )}
-                        </form>
-                    </>
-                )}
-            </section>
-
-            <section className="app-card">
                 <h2>Skapa användare</h2>
-                <p className="app-card-subtitle">
-                    Lägg till en ny användare i systemet.
-                </p>
-
                 <form className="profile-form" onSubmit={handleCreateUser}>
                     <div className="profile-form-grid">
                         <div>
                             <label className="app-label">Förnamn</label>
-                            <input
-                                className="app-input"
-                                type="text"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Efternamn</label>
-                            <input
-                                className="app-input"
-                                type="text"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                         </div>
-
                         <div className="profile-form-full">
                             <label className="app-label">E-post</label>
-                            <input
-                                className="app-input"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Lösenord</label>
-                            <input
-                                className="app-input"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Roll</label>
-                            <select
-                                className="app-input"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                            >
+                            <select className="app-input" value={role} onChange={(e) => setRole(e.target.value)}>
                                 <option value="USER">USER</option>
                                 <option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
-
-                        <div className="profile-form-full">
-                            <label className="admin-checkbox-row">
-                                <input
-                                    type="checkbox"
-                                    checked={active}
-                                    onChange={(e) => setActive(e.target.checked)}
-                                />
-                                <span>Aktivt konto</span>
-                            </label>
+                        <div>
+                            <label className="app-label">Status</label>
+                            <select className="app-input" value={String(active)} onChange={(e) => setActive(e.target.value === "true")}>
+                                <option value="true">Aktiv</option>
+                                <option value="false">Inaktiv</option>
+                            </select>
                         </div>
                     </div>
 
@@ -653,21 +418,98 @@ function AdminPage() {
             </section>
 
             <section className="app-card">
+                <h2>Användare</h2>
+                {loading && <p>Laddar användare...</p>}
+                {error && <p className="app-message-error">{error}</p>}
+
+                {!loading && !error && (
+                    <div className="admin-user-grid">
+                        <div className="admin-user-list">
+                            {users.map((user) => (
+                                <button key={user.id} type="button" className={`admin-user-list-item ${selectedUserId === user.id ? "active" : ""}`} onClick={() => handleSelectUser(user)}>
+                                    <strong>{user.firstName} {user.lastName}</strong>
+                                    <span>{user.email}</span>
+                                    <span>{user.role} · {user.active ? "Aktiv" : "Inaktiv"}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {selectedUserId && (
+                            <div className="admin-user-editor">
+                                <form className="profile-form" onSubmit={handleUpdateUser}>
+                                    <h3>Redigera användare</h3>
+                                    <div className="profile-form-grid">
+                                        <div>
+                                            <label className="app-label">Förnamn</label>
+                                            <input className="app-input" type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} required />
+                                        </div>
+                                        <div>
+                                            <label className="app-label">Efternamn</label>
+                                            <input className="app-input" type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} required />
+                                        </div>
+                                        <div className="profile-form-full">
+                                            <label className="app-label">E-post</label>
+                                            <input className="app-input" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
+                                        </div>
+                                        <div>
+                                            <label className="app-label">Roll</label>
+                                            <select className="app-input" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
+                                                <option value="USER">USER</option>
+                                                <option value="ADMIN">ADMIN</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="app-label">Status</label>
+                                            <select className="app-input" value={String(editActive)} onChange={(e) => setEditActive(e.target.value === "true")}>
+                                                <option value="true">Aktiv</option>
+                                                <option value="false">Inaktiv</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="profile-form-actions">
+                                        <button className="app-button" type="submit" disabled={editLoading}>
+                                            {editLoading ? "Sparar..." : "Spara ändringar"}
+                                        </button>
+                                    </div>
+
+                                    {editError && <p className="app-message-error">{editError}</p>}
+                                    {editSuccess && <p className="app-message-success">{editSuccess}</p>}
+                                </form>
+
+                                <form className="profile-form" onSubmit={handleResetPassword}>
+                                    <h3>Återställ lösenord</h3>
+                                    <div className="profile-form-grid">
+                                        <div className="profile-form-full">
+                                            <label className="app-label">Nytt lösenord</label>
+                                            <input className="app-input" type="password" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} required />
+                                        </div>
+                                    </div>
+
+                                    <div className="profile-form-actions">
+                                        <button className="app-button" type="submit" disabled={resetPasswordLoading}>
+                                            {resetPasswordLoading ? "Uppdaterar..." : "Uppdatera lösenord"}
+                                        </button>
+                                    </div>
+
+                                    {resetPasswordError && <p className="app-message-error">{resetPasswordError}</p>}
+                                    {resetPasswordSuccess && <p className="app-message-success">{resetPasswordSuccess}</p>}
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </section>
+
+            <section className="app-card">
                 <h2>Spara schema åt användare</h2>
-                <p className="app-card-subtitle">
-                    Lägg in eller uppdatera schema för en användare.
-                </p>
+                <p className="app-card-subtitle">Lägg in eller uppdatera schema för en specifik dag.</p>
 
                 <form className="profile-form" onSubmit={handleSaveSchedule}>
                     <div className="profile-form-grid">
                         <div className="profile-form-full">
                             <label className="app-label">Användare</label>
-                            <select
-                                className="app-input"
-                                value={scheduleUserId}
-                                onChange={(e) => setScheduleUserId(e.target.value)}
-                                required
-                            >
+                            <select className="app-input" value={scheduleUserId} onChange={(e) => setScheduleUserId(e.target.value)} required>
                                 <option value="">Välj användare</option>
                                 {users.map((user) => (
                                     <option key={user.id} value={user.id}>
@@ -676,50 +518,21 @@ function AdminPage() {
                                 ))}
                             </select>
                         </div>
-
                         <div>
                             <label className="app-label">Datum</label>
-                            <input
-                                className="app-input"
-                                type="date"
-                                value={scheduleDate}
-                                onChange={(e) => setScheduleDate(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Starttid</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={scheduleStartTime}
-                                onChange={(e) => setScheduleStartTime(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={scheduleStartTime} onChange={(e) => setScheduleStartTime(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Sluttid</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={scheduleEndTime}
-                                onChange={(e) => setScheduleEndTime(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={scheduleEndTime} onChange={(e) => setScheduleEndTime(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Betald lunch (minuter)</label>
-                            <input
-                                className="app-input"
-                                type="number"
-                                min="0"
-                                value={schedulePaidLunchMinutes}
-                                onChange={(e) => setSchedulePaidLunchMinutes(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="number" min="0" value={schedulePaidLunchMinutes} onChange={(e) => setSchedulePaidLunchMinutes(e.target.value)} required />
                         </div>
                     </div>
 
@@ -734,31 +547,15 @@ function AdminPage() {
 
                     {savedSchedule && (
                         <div className="admin-saved-schedule-box">
-                            <div className="app-grid">
-                                <div className="app-info-box">
-                                    <span className="app-label">Datum</span>
-                                    <span className="app-value">{savedSchedule.workDate}</span>
-                                </div>
-
-                                <div className="app-info-box">
-                                    <span className="app-label">Starttid</span>
-                                    <span className="app-value">{savedSchedule.plannedStartTime}</span>
-                                </div>
-
-                                <div className="app-info-box">
-                                    <span className="app-label">Sluttid</span>
-                                    <span className="app-value">{savedSchedule.plannedEndTime}</span>
-                                </div>
-
-                                <div className="app-info-box">
-                                    <span className="app-label">Betald lunch</span>
-                                    <span className="app-value">{savedSchedule.paidLunchMinutes} min</span>
-                                </div>
-
-                                <div className="app-info-box">
-                                    <span className="app-label">Beräknad arbetstid</span>
-                                    <span className="app-value">{savedSchedule.expectedWorkMinutes} min</span>
-                                </div>
+                            <div className="app-info-box">
+                                <span className="app-label">Datum</span>
+                                <span className="app-value">{savedSchedule.workDate}</span>
+                                <span className="app-label">Tid</span>
+                                <span className="app-value">{savedSchedule.plannedStartTime} - {savedSchedule.plannedEndTime}</span>
+                                <span className="app-label">Lunch</span>
+                                <span className="app-value">{savedSchedule.paidLunchMinutes} min</span>
+                                <span className="app-label">Arbetstid</span>
+                                <span className="app-value">{savedSchedule.expectedWorkMinutes} min</span>
                             </div>
                         </div>
                     )}
@@ -767,20 +564,13 @@ function AdminPage() {
 
             <section className="app-card">
                 <h2>Skapa återkommande schema</h2>
-                <p className="app-card-subtitle">
-                    Skapa schema för flera dagar i ett intervall för en användare.
-                </p>
+                <p className="app-card-subtitle">Skapa scheman för flera datum i ett enda flöde.</p>
 
                 <form className="profile-form" onSubmit={handleSaveRecurringSchedule}>
                     <div className="profile-form-grid">
                         <div className="profile-form-full">
                             <label className="app-label">Användare</label>
-                            <select
-                                className="app-input"
-                                value={recurringUserId}
-                                onChange={(e) => setRecurringUserId(e.target.value)}
-                                required
-                            >
+                            <select className="app-input" value={recurringUserId} onChange={(e) => setRecurringUserId(e.target.value)} required>
                                 <option value="">Välj användare</option>
                                 {users.map((user) => (
                                     <option key={user.id} value={user.id}>
@@ -789,61 +579,25 @@ function AdminPage() {
                                 ))}
                             </select>
                         </div>
-
                         <div>
                             <label className="app-label">Startdatum</label>
-                            <input
-                                className="app-input"
-                                type="date"
-                                value={recurringStartDate}
-                                onChange={(e) => setRecurringStartDate(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="date" value={recurringStartDate} onChange={(e) => setRecurringStartDate(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Slutdatum</label>
-                            <input
-                                className="app-input"
-                                type="date"
-                                value={recurringEndDate}
-                                onChange={(e) => setRecurringEndDate(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="date" value={recurringEndDate} onChange={(e) => setRecurringEndDate(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Starttid</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={recurringStartTime}
-                                onChange={(e) => setRecurringStartTime(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={recurringStartTime} onChange={(e) => setRecurringStartTime(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Sluttid</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={recurringEndTime}
-                                onChange={(e) => setRecurringEndTime(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={recurringEndTime} onChange={(e) => setRecurringEndTime(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Betald lunch (minuter)</label>
-                            <input
-                                className="app-input"
-                                type="number"
-                                min="0"
-                                value={recurringPaidLunchMinutes}
-                                onChange={(e) => setRecurringPaidLunchMinutes(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="number" min="0" value={recurringPaidLunchMinutes} onChange={(e) => setRecurringPaidLunchMinutes(e.target.value)} required />
                         </div>
                     </div>
 
@@ -858,24 +612,16 @@ function AdminPage() {
 
                     {createdRecurringSchedules.length > 0 && (
                         <div className="admin-saved-schedule-box">
-                            <p className="app-card-subtitle">
-                                {createdRecurringSchedules.length} scheman skapades.
-                            </p>
-
+                            <p className="app-card-subtitle">{createdRecurringSchedules.length} scheman skapades.</p>
                             <div className="admin-recurring-schedule-list">
                                 {createdRecurringSchedules.map((schedule) => (
                                     <div key={schedule.id} className="app-info-box">
                                         <span className="app-label">Datum</span>
                                         <span className="app-value">{schedule.workDate}</span>
-
                                         <span className="app-label">Tid</span>
-                                        <span className="app-value">
-                      {schedule.plannedStartTime} - {schedule.plannedEndTime}
-                    </span>
-
+                                        <span className="app-value">{schedule.plannedStartTime} - {schedule.plannedEndTime}</span>
                                         <span className="app-label">Lunch</span>
                                         <span className="app-value">{schedule.paidLunchMinutes} min</span>
-
                                         <span className="app-label">Arbetstid</span>
                                         <span className="app-value">{schedule.expectedWorkMinutes} min</span>
                                     </div>
@@ -888,20 +634,13 @@ function AdminPage() {
 
             <section className="app-card">
                 <h2>Manuell tidregistrering åt användare</h2>
-                <p className="app-card-subtitle">
-                    Lägg in ett arbetspass i efterhand åt en användare.
-                </p>
+                <p className="app-card-subtitle">Lägg in ett arbetspass i efterhand åt en användare.</p>
 
                 <form className="profile-form" onSubmit={handleManualTimeForUser}>
                     <div className="profile-form-grid">
                         <div className="profile-form-full">
                             <label className="app-label">Användare</label>
-                            <select
-                                className="app-input"
-                                value={manualUserId}
-                                onChange={(e) => setManualUserId(e.target.value)}
-                                required
-                            >
+                            <select className="app-input" value={manualUserId} onChange={(e) => setManualUserId(e.target.value)} required>
                                 <option value="">Välj användare</option>
                                 {users.map((user) => (
                                     <option key={user.id} value={user.id}>
@@ -910,69 +649,29 @@ function AdminPage() {
                                 ))}
                             </select>
                         </div>
-
                         <div>
                             <label className="app-label">Datum</label>
-                            <input
-                                className="app-input"
-                                type="date"
-                                value={manualWorkDate}
-                                onChange={(e) => setManualWorkDate(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="date" value={manualWorkDate} onChange={(e) => setManualWorkDate(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Check-in</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={manualCheckIn}
-                                onChange={(e) => setManualCheckIn(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={manualCheckIn} onChange={(e) => setManualCheckIn(e.target.value)} required />
                         </div>
-
                         <div>
                             <label className="app-label">Lunch ut</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={manualLunchOut}
-                                onChange={(e) => setManualLunchOut(e.target.value)}
-                            />
+                            <input className="app-input" type="time" value={manualLunchOut} onChange={(e) => setManualLunchOut(e.target.value)} />
                         </div>
-
                         <div>
                             <label className="app-label">Lunch in</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={manualLunchIn}
-                                onChange={(e) => setManualLunchIn(e.target.value)}
-                            />
+                            <input className="app-input" type="time" value={manualLunchIn} onChange={(e) => setManualLunchIn(e.target.value)} />
                         </div>
-
                         <div>
                             <label className="app-label">Check-out</label>
-                            <input
-                                className="app-input"
-                                type="time"
-                                value={manualCheckOut}
-                                onChange={(e) => setManualCheckOut(e.target.value)}
-                                required
-                            />
+                            <input className="app-input" type="time" value={manualCheckOut} onChange={(e) => setManualCheckOut(e.target.value)} required />
                         </div>
-
                         <div className="profile-form-full">
                             <label className="app-label">Kommentar</label>
-                            <textarea
-                                className="app-input"
-                                rows="4"
-                                value={manualComment}
-                                onChange={(e) => setManualComment(e.target.value)}
-                                placeholder="Exempel: Registered by admin"
-                            />
+                            <textarea className="app-input" rows="4" value={manualComment} onChange={(e) => setManualComment(e.target.value)} placeholder="Exempel: Registered by admin" />
                         </div>
                     </div>
 

@@ -6,6 +6,8 @@ import {
     updateMyProfile,
 } from "../services/auth";
 
+const MIN_PASSWORD_LENGTH = 12;
+
 function ProfilePage({ user, setUser }) {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -63,8 +65,8 @@ function ProfilePage({ user, setUser }) {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setPasswordError("Det nya lösenordet måste vara minst 6 tecken.");
+        if (newPassword.length < MIN_PASSWORD_LENGTH) {
+            setPasswordError(`Det nya lösenordet måste vara minst ${MIN_PASSWORD_LENGTH} tecken.`);
             return;
         }
 
@@ -151,8 +153,8 @@ function ProfilePage({ user, setUser }) {
                         <div className="app-info-box">
                             <span className="app-label">Status</span>
                             <span className="app-value">
-                {user?.active ? "Aktiv" : "Inaktiv"}
-              </span>
+                                {user?.active ? "Aktiv" : "Inaktiv"}
+                            </span>
                         </div>
 
                         <div className="app-info-box">
