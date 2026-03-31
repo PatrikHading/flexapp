@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
 public class WorkScheduleService {
+
+    private static final long MAX_RECURRING_SCHEDULE_DAYS = 366;
 
     private final WorkScheduleRepository workScheduleRepository;
     private final UserRepository userRepository;
@@ -149,6 +152,14 @@ public class WorkScheduleService {
 
         if (request.getEndDate().isBefore(request.getStartDate())) {
             throw new BadRequestException("End date must be the same as or after start date.");
+        }
+
+        long requestedDays = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+
+        if (requestedDays > MAX_RECURRING_SCHEDULE_DAYS) {
+            throw new BadRequestException(
+                    "Recurring schedules can span at most " + MAX_RECURRING_SCHEDULE_DAYS + " days."
+            );
         }
 
         validateScheduleInput(
