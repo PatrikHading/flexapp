@@ -4,9 +4,12 @@ import com.example.flexapp.dto.FlexBalanceResponse;
 import com.example.flexapp.dto.ManualTimeEntryRequest;
 import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.service.TimeEntryService;
-import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/time")
@@ -49,8 +52,11 @@ public class TimeEntryController {
     }
 
     @GetMapping("/history")
-    public List<TimeEntryResponse> getHistory() {
-        return timeEntryService.getHistory();
+    public Page<TimeEntryResponse> getHistory(
+            @PageableDefault(size = 20, sort = "workDate", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        return timeEntryService.getHistory(pageable);
     }
 
     @GetMapping("/flex-balance")

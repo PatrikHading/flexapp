@@ -14,11 +14,12 @@ import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class TimeEntryService {
@@ -212,13 +213,11 @@ public class TimeEntryService {
         return toResponse(getTodayEntryEntity(currentUser.getId()));
     }
 
-    public List<TimeEntryResponse> getHistory() {
+    public Page<TimeEntryResponse> getHistory(Pageable pageable) {
         User currentUser = securityService.getCurrentUser();
 
-        return timeEntryRepository.findByUserIdOrderByWorkDateDesc(currentUser.getId())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return timeEntryRepository.findByUserId(currentUser.getId(), pageable)
+                .map(this::toResponse);
     }
 
     public FlexBalanceResponse getFlexBalance() {
