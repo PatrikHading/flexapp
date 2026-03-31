@@ -426,10 +426,26 @@ function AdminPage() {
                     <div className="admin-user-grid">
                         <div className="admin-user-list">
                             {users.map((user) => (
-                                <button key={user.id} type="button" className={`admin-user-list-item ${selectedUserId === user.id ? "active" : ""}`} onClick={() => handleSelectUser(user)}>
-                                    <strong>{user.firstName} {user.lastName}</strong>
-                                    <span>{user.email}</span>
-                                    <span>{user.role} · {user.active ? "Aktiv" : "Inaktiv"}</span>
+                                <button
+                                    key={user.id}
+                                    type="button"
+                                    className={`admin-user-list-item ${selectedUserId === user.id ? "active" : ""}`}
+                                    onClick={() => handleSelectUser(user)}
+                                >
+                                    <span className="admin-user-name">
+                                        {user.firstName} {user.lastName}
+                                    </span>
+
+                                    <span className="admin-user-email">
+                                        {user.email}
+                                    </span>
+
+                                    <div className="admin-user-meta">
+                                        <span className="admin-user-role">{user.role}</span>
+                                        <span className={`admin-user-status ${user.active ? "is-active" : "is-inactive"}`}>
+                                            {user.active ? "Aktiv" : "Inaktiv"}
+                                        </span>
+                                    </div>
                                 </button>
                             ))}
                         </div>

@@ -65,10 +65,14 @@ public class AdminUserService {
     public UserProfileResponse updateUser(Long userId, AdminUpdateUserRequest request) {
         requireAdmin();
 
+        User currentUser = securityService.getCurrentUser();
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         validateAdminUpdateRequest(request);
+
+        validateNoSelfLockoutOnUpdate(currentUser, user, request);
 
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
@@ -107,8 +111,12 @@ public class AdminUserService {
     public void deactivateUser(Long userId) {
         requireAdmin();
 
+        User currentUser = securityService.getCurrentUser();
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        validateNoSelfDeactivate(currentUser, user);
 
         user.setActive(false);
         user.incrementTokenVersion();
@@ -118,6 +126,26 @@ public class AdminUserService {
     private void requireAdmin() {
         if (!securityService.isAdmin()) {
             throw new AccessDeniedException("Only admins can manage users.");
+        }
+    }
+
+    private void validateNoSelfLockoutOnUpdate(User currentUser, User targetUser, AdminUpdateUserRequest request) {
+        if (!currentUser.getId().equals(targetUser.getId())) {
+            return;
+        }
+
+        if (!request.isActive()) {
+            throw new AccessDeniedException("Admins cannot deactivate their own account.");
+        }
+
+        if (request.getRole() != currentUser.getRole()) {
+            throw new AccessDeniedException("Admins cannot change their own role.");
+        }
+    }
+
+    private void validateNoSelfDeactivate(User currentUser, User targetUser) {
+        if (currentUser.getId().equals(targetUser.getId())) {
+            throw new AccessDeniedException("Admins cannot deactivate their own account.");
         }
     }
 
