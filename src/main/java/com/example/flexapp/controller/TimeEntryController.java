@@ -53,7 +53,7 @@ public class TimeEntryController {
 
     @GetMapping("/history")
     public Page<TimeEntryResponse> getHistory(
-            @PageableDefault(size = 20, sort = "workDate", direction = Sort.Direction.DESC)
+            @PageableDefault(sort = "workDate", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
         return timeEntryService.getHistory(pageable);
