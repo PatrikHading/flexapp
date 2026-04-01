@@ -10,6 +10,7 @@ import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -56,7 +57,7 @@ public class AdminUserService {
         user.setRole(request.getRole());
         user.setActive(request.isActive());
 
-        User savedUser = userRepository.save(user);
+        User savedUser = saveUserHandlingDuplicateEmail(user);
         return toUserProfileResponse(savedUser);
     }
 
@@ -83,7 +84,7 @@ public class AdminUserService {
         user.setRole(request.getRole());
         user.setActive(request.isActive());
 
-        User savedUser = userRepository.save(user);
+        User savedUser = saveUserHandlingDuplicateEmail(user);
         return toUserProfileResponse(savedUser);
     }
 
@@ -140,6 +141,14 @@ public class AdminUserService {
     private void validateNoSelfDeactivate(User currentUser, User targetUser) {
         if (currentUser.getId().equals(targetUser.getId())) {
             throw new AccessDeniedException("Admins cannot deactivate their own account.");
+        }
+    }
+
+    private User saveUserHandlingDuplicateEmail(User user) {
+        try {
+            return userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BadRequestException("Email is already in use.");
         }
     }
 

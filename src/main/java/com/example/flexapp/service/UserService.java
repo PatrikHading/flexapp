@@ -7,6 +7,7 @@ import com.example.flexapp.entity.User;
 import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -44,7 +45,7 @@ public class UserService {
         currentUser.setLastName(request.getLastName().trim());
         currentUser.setEmail(normalizedEmail);
 
-        User savedUser = userRepository.save(currentUser);
+        User savedUser = saveUserHandlingDuplicateEmail(currentUser);
         return toProfileResponse(savedUser);
     }
 
@@ -68,6 +69,14 @@ public class UserService {
         User currentUser = securityService.getCurrentUser();
         currentUser.incrementTokenVersion();
         userRepository.save(currentUser);
+    }
+
+    private User saveUserHandlingDuplicateEmail(User user) {
+        try {
+            return userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BadRequestException("Email is already in use.");
+        }
     }
 
     private UserProfileResponse toProfileResponse(User user) {
