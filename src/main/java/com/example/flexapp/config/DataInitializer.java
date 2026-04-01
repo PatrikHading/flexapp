@@ -12,7 +12,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Component
-@Profile({"seed", "dev"})
+@Profile("seed")
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -49,6 +49,6 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        System.out.println("Seeded default schedules for existing users in dev/seed profile.");
+        System.out.println("Seeded default schedules for existing users in seed profile.");
     }
 }
