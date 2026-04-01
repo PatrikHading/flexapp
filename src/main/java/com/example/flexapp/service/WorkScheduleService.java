@@ -12,7 +12,9 @@ import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -21,6 +23,7 @@ import java.util.List;
 public class WorkScheduleService {
 
     private static final long MAX_RECURRING_SCHEDULE_DAYS = 366;
+    private static final LocalDate EXPECTED_WORK_MINUTES_ANCHOR_DATE = LocalDate.of(2000, 1, 1);
 
     private final WorkScheduleRepository workScheduleRepository;
     private final UserRepository userRepository;
@@ -138,11 +141,11 @@ public class WorkScheduleService {
                                        LocalTime plannedEndTime,
                                        Integer paidLunchMinutes) {
         if (plannedStartTime == null || plannedEndTime == null) {
-            throw new BadRequestException("Planned start time and end times are required.");
+            throw new BadRequestException("Planned start time and end time are required.");
         }
 
-        if (!plannedEndTime.isAfter(plannedStartTime)) {
-            throw new BadRequestException("Planned end time must be after planned start time.");
+        if (plannedStartTime.equals(plannedEndTime)) {
+            throw new BadRequestException("Planned start time and end time cannot be the same.");
         }
 
         if (paidLunchMinutes == null || paidLunchMinutes < 0) {
@@ -180,8 +183,14 @@ public class WorkScheduleService {
     }
 
     private int calculateExpectedWorkMinutes(LocalTime plannedStartTime, LocalTime plannedEndTime) {
-        return plannedEndTime.getHour() * 60 + plannedEndTime.getMinute()
-                - (plannedStartTime.getHour() * 60 + plannedStartTime.getMinute());
+        LocalDateTime start = EXPECTED_WORK_MINUTES_ANCHOR_DATE.atTime(plannedStartTime);
+        LocalDateTime end = EXPECTED_WORK_MINUTES_ANCHOR_DATE.atTime(plannedEndTime);
+
+        if (!end.isAfter(start)) {
+            end = end.plusDays(1);
+        }
+
+        return Math.toIntExact(Duration.between(start, end).toMinutes());
     }
 
     private WorkScheduleResponse toResponse(WorkSchedule schedule) {
