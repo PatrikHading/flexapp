@@ -117,6 +117,30 @@ class FlexCalculationServiceTest {
         assertEquals(30, service.calculateFlexMinutes(schedule, entry));
     }
 
+    @Test
+    void flexMinutes_zero_forNightShift_whenWorkedExactlyPlanned() {
+        WorkSchedule nightSchedule = new WorkSchedule();
+        nightSchedule.setPlannedStartTime(LocalTime.of(22, 0));
+        nightSchedule.setPlannedEndTime(LocalTime.of(6, 0));
+        nightSchedule.setPaidLunchMinutes(30);
+
+        TimeEntry entry = makeNightShiftEntry("22:00", "02:00", "02:30", "06:00");
+
+        assertEquals(0, service.calculateFlexMinutes(nightSchedule, entry));
+    }
+
+    @Test
+    void flexMinutes_negative_forNightShift_whenWorkedLessThanPlanned() {
+        WorkSchedule nightSchedule = new WorkSchedule();
+        nightSchedule.setPlannedStartTime(LocalTime.of(22, 0));
+        nightSchedule.setPlannedEndTime(LocalTime.of(6, 0));
+        nightSchedule.setPaidLunchMinutes(30);
+
+        TimeEntry entry = makeNightShiftEntry("22:00", "02:00", "02:30", "05:30");
+
+        assertEquals(-30, service.calculateFlexMinutes(nightSchedule, entry));
+    }
+
     // --- Helpers ---
 
     private TimeEntry makeEntry(String checkIn, String lunchOut, String lunchIn, String checkOut) {
@@ -129,6 +153,23 @@ class FlexCalculationServiceTest {
             entry.setLunchOutTime(LocalDateTime.of(date, LocalTime.parse(lunchOut)));
         if (lunchIn != null)
             entry.setLunchInTime(LocalDateTime.of(date, LocalTime.parse(lunchIn)));
+        return entry;
+    }
+
+    private TimeEntry makeNightShiftEntry(String checkIn, String lunchOut, String lunchIn, String checkOut) {
+        TimeEntry entry = new TimeEntry();
+        LocalDate date = LocalDate.of(2025, 1, 1);
+        entry.setWorkDate(date);
+
+        entry.setCheckInTime(LocalDateTime.of(date, LocalTime.parse(checkIn)));
+        if (lunchOut != null) {
+            entry.setLunchOutTime(LocalDateTime.of(date.plusDays(1), LocalTime.parse(lunchOut)));
+        }
+        if (lunchIn != null) {
+            entry.setLunchInTime(LocalDateTime.of(date.plusDays(1), LocalTime.parse(lunchIn)));
+        }
+        entry.setCheckOutTime(LocalDateTime.of(date.plusDays(1), LocalTime.parse(checkOut)));
+
         return entry;
     }
 

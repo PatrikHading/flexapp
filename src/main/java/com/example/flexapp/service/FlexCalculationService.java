@@ -3,11 +3,15 @@ package com.example.flexapp.service;
 import com.example.flexapp.entity.TimeEntry;
 import com.example.flexapp.entity.WorkSchedule;
 import org.springframework.stereotype.Service;
+
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
 public class FlexCalculationService {
+
+    private static final LocalDate PLANNED_MINUTES_ANCHOR_DATE = LocalDate.of(2000, 1, 1);
 
     public int calculateLunchMinutes(TimeEntry timeEntry) {
         if (timeEntry.getLunchOutTime() == null || timeEntry.getLunchInTime() == null) {
@@ -26,10 +30,7 @@ public class FlexCalculationService {
     }
 
     public int calculateFlexMinutes(WorkSchedule schedule, TimeEntry timeEntry) {
-        int plannedMinutes = (int) Duration.between(
-                schedule.getPlannedStartTime(),
-                schedule.getPlannedEndTime()
-        ).toMinutes() - schedule.getPaidLunchMinutes();
+        int plannedMinutes = calculatePlannedWorkedMinutes(schedule);
 
         int actualLunchMinutes = calculateLunchMinutes(timeEntry);
         int workedMinutes = calculateWorkedMinutes(
@@ -39,5 +40,17 @@ public class FlexCalculationService {
         );
 
         return workedMinutes - plannedMinutes;
+    }
+
+    private int calculatePlannedWorkedMinutes(WorkSchedule schedule) {
+        LocalDateTime plannedStart = PLANNED_MINUTES_ANCHOR_DATE.atTime(schedule.getPlannedStartTime());
+        LocalDateTime plannedEnd = PLANNED_MINUTES_ANCHOR_DATE.atTime(schedule.getPlannedEndTime());
+
+        if (!plannedEnd.isAfter(plannedStart)) {
+            plannedEnd = plannedEnd.plusDays(1);
+        }
+
+        return Math.toIntExact(Duration.between(plannedStart, plannedEnd).toMinutes())
+                - schedule.getPaidLunchMinutes();
     }
 }
