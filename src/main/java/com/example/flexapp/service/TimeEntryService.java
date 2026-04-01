@@ -15,16 +15,27 @@ import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class TimeEntryService {
 
     private static final int MANUAL_ENTRY_MAX_DAYS_BACK = 7;
+
+    private static final List<String> ALLOWED_HISTORY_SORT_FIELDS = List.of("workDate", "createdAt", "id");
+    private static final Set<String> ALLOWED_HISTORY_SORT_FIELD_SET = Set.copyOf(ALLOWED_HISTORY_SORT_FIELDS);
+    private static final Sort DEFAULT_HISTORY_SORT = Sort.by(
+            Sort.Order.desc("workDate"),
+            Sort.Order.desc("id")
+    );
 
     private final TimeEntryRepository timeEntryRepository;
     private final UserRepository userRepository;
@@ -164,8 +175,9 @@ public class TimeEntryService {
 
     public Page<TimeEntryResponse> getHistory(Pageable pageable) {
         User currentUser = securityService.getCurrentUser();
+        Pageable validatedPageable = buildValidatedHistoryPageable(pageable);
 
-        return timeEntryRepository.findByUserId(currentUser.getId(), pageable)
+        return timeEntryRepository.findByUserId(currentUser.getId(), validatedPageable)
                 .map(this::toResponse);
     }
 
@@ -204,6 +216,27 @@ public class TimeEntryService {
         validateAdminManualRequest(request, existingEntry);
 
         return saveManualEntry(targetUser, request, existingEntry);
+    }
+
+    private Pageable buildValidatedHistoryPageable(Pageable pageable) {
+        Sort requestedSort = pageable.getSort().isSorted() ? pageable.getSort() : DEFAULT_HISTORY_SORT;
+
+        for (Sort.Order order : requestedSort) {
+            if (!ALLOWED_HISTORY_SORT_FIELD_SET.contains(order.getProperty())) {
+                throw new BadRequestException(
+                        "Sorting is only allowed for fields: " + String.join(", ", ALLOWED_HISTORY_SORT_FIELDS)
+                );
+            }
+        }
+
+        boolean includesIdSort = requestedSort.stream()
+                .anyMatch(order -> "id".equals(order.getProperty()));
+
+        Sort safeSort = includesIdSort
+                ? requestedSort
+                : requestedSort.and(Sort.by(Sort.Direction.DESC, "id"));
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), safeSort);
     }
 
     private TimeEntryResponse saveManualEntry(User targetUser,
