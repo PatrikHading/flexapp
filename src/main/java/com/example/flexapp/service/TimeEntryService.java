@@ -157,6 +157,27 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
+    public TimeEntryResponse getTodayEntry() {
+        User currentUser = securityService.getCurrentUser();
+        return toResponse(getTodayEntryEntity(currentUser.getId()));
+    }
+
+    public Page<TimeEntryResponse> getHistory(Pageable pageable) {
+        User currentUser = securityService.getCurrentUser();
+
+        return timeEntryRepository.findByUserId(currentUser.getId(), pageable)
+                .map(this::toResponse);
+    }
+
+    public FlexBalanceResponse getFlexBalance() {
+        User currentUser = securityService.getCurrentUser();
+        Long userId = currentUser.getId();
+
+        int totalFlexMinutes = Math.toIntExact(timeEntryRepository.sumFlexMinutesByUserId(userId));
+
+        return new FlexBalanceResponse(userId, totalFlexMinutes);
+    }
+
     @Transactional
     public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
         User currentUser = securityService.getCurrentUser();
@@ -210,32 +231,6 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
-    public TimeEntryResponse getTodayEntry() {
-        User currentUser = securityService.getCurrentUser();
-        return toResponse(getTodayEntryEntity(currentUser.getId()));
-    }
-
-    public Page<TimeEntryResponse> getHistory(Pageable pageable) {
-        User currentUser = securityService.getCurrentUser();
-
-        return timeEntryRepository.findByUserId(currentUser.getId(), pageable)
-                .map(this::toResponse);
-    }
-
-    public FlexBalanceResponse getFlexBalance() {
-        User currentUser = securityService.getCurrentUser();
-        Long userId = currentUser.getId();
-
-        int totalFlexMinutes = timeEntryRepository.findByUserIdOrderByWorkDateDesc(userId)
-                .stream()
-                .map(TimeEntry::getFlexMinutes)
-                .filter(flexMinutes -> flexMinutes != null)
-                .mapToInt(Integer::intValue)
-                .sum();
-
-        return new FlexBalanceResponse(userId, totalFlexMinutes);
-    }
-
     private void validateManualRequest(ManualTimeEntryRequest request,
                                        LocalDate today,
                                        TimeEntry existingEntry) {
@@ -258,16 +253,6 @@ public class TimeEntryService {
         if (existingEntry != null) {
             throw new BadRequestException("A time entry already exists for this date and cannot be overwritten.");
         }
-
-        if (request.getComment() == null || request.getComment().isBlank()) {
-            throw new BadRequestException("Comment is required for manual entries.");
-        }
-
-        if (request.getComment().trim().length() < 10) {
-            throw new BadRequestException("Comment must be at least 10 characters long.");
-        }
-
-        validateCommonManualRequest(request);
     }
 
     private void validateAdminManualRequest(ManualTimeEntryRequest request,
@@ -278,58 +263,6 @@ public class TimeEntryService {
 
         if (existingEntry != null) {
             throw new BadRequestException("A time entry already exists for this date and cannot be overwritten.");
-        }
-
-        validateCommonManualRequest(request);
-    }
-
-    private void validateCommonManualRequest(ManualTimeEntryRequest request) {
-        if (request.getCheckInTime() == null || request.getCheckOutTime() == null) {
-            throw new BadRequestException("Check-in time and check-out time are required.");
-        }
-
-        if (!request.getCheckInTime().toLocalDate().equals(request.getWorkDate())) {
-            throw new BadRequestException("Check-in time must match the selected work date.");
-        }
-
-        if (!request.getCheckOutTime().toLocalDate().equals(request.getWorkDate())) {
-            throw new BadRequestException("Check-out time must match the selected work date.");
-        }
-
-        if (!request.getCheckOutTime().isAfter(request.getCheckInTime())) {
-            throw new BadRequestException("Check-out time must be after check-in time.");
-        }
-
-        if (request.getLunchOutTime() != null && request.getLunchInTime() == null) {
-            throw new BadRequestException("Lunch in time is required when lunch out time is provided.");
-        }
-
-        if (request.getLunchOutTime() == null && request.getLunchInTime() != null) {
-            throw new BadRequestException("Lunch out time is required when lunch in time is provided.");
-        }
-
-        if (request.getLunchOutTime() != null
-                && !request.getLunchOutTime().toLocalDate().equals(request.getWorkDate())) {
-            throw new BadRequestException("Lunch out time must match the selected work date.");
-        }
-
-        if (request.getLunchInTime() != null
-                && !request.getLunchInTime().toLocalDate().equals(request.getWorkDate())) {
-            throw new BadRequestException("Lunch in time must match the selected work date.");
-        }
-
-        if (request.getLunchOutTime() != null && request.getLunchInTime() != null) {
-            if (!request.getLunchOutTime().isAfter(request.getCheckInTime())) {
-                throw new BadRequestException("Lunch out time must be after check-in time.");
-            }
-
-            if (!request.getLunchInTime().isAfter(request.getLunchOutTime())) {
-                throw new BadRequestException("Lunch in time must be after lunch out time.");
-            }
-
-            if (!request.getCheckOutTime().isAfter(request.getLunchInTime())) {
-                throw new BadRequestException("Check-out time must be after lunch in time.");
-            }
         }
     }
 
