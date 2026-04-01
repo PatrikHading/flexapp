@@ -100,6 +100,16 @@ public class WorkScheduleService {
         return responses;
     }
 
+    public WorkScheduleResponse getCurrentUserScheduleForDate(LocalDate workDate) {
+        Long currentUserId = securityService.getCurrentUser().getId();
+        return getScheduleForDate(currentUserId, workDate);
+    }
+
+    public List<WorkScheduleResponse> getCurrentUserSchedules() {
+        Long currentUserId = securityService.getCurrentUser().getId();
+        return getSchedules(currentUserId);
+    }
+
     public WorkScheduleResponse getScheduleForDate(Long userId, LocalDate workDate) {
         securityService.validateUserAccess(userId);
 

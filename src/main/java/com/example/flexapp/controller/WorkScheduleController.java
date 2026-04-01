@@ -17,6 +17,16 @@ public class WorkScheduleController {
         this.workScheduleService = workScheduleService;
     }
 
+    @GetMapping("/me/today")
+    public WorkScheduleResponse getMyTodaySchedule() {
+        return workScheduleService.getCurrentUserScheduleForDate(LocalDate.now());
+    }
+
+    @GetMapping("/me")
+    public List<WorkScheduleResponse> getMySchedules() {
+        return workScheduleService.getCurrentUserSchedules();
+    }
+
     @GetMapping("/{userId}/today")
     public WorkScheduleResponse getTodaySchedule(@PathVariable Long userId) {
         return workScheduleService.getScheduleForDate(userId, LocalDate.now());

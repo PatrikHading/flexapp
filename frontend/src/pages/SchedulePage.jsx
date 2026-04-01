@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchUserSchedule } from "../services/auth";
+import { fetchMySchedule } from "../services/auth";
 
 const formatTime = (time) => {
     if (!time) return "-";
@@ -22,7 +22,7 @@ function SchedulePage({ user }) {
                 setLoading(true);
                 setError("");
 
-                const data = await fetchUserSchedule(user.id);
+                const data = await fetchMySchedule();
                 setSchedule(Array.isArray(data) ? data[0] : data);
             } catch (err) {
                 setError(err.message);

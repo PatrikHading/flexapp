@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-    fetchUserSchedule,
+    fetchMySchedule,
     fetchTodayTimeEntry,
     fetchFlexBalance,
     postTimeAction,
@@ -46,9 +46,9 @@ function DashboardPage({ user }) {
             setError("");
 
             const [scheduleData, timeData, flexData] = await Promise.all([
-                fetchUserSchedule(user.id),
-                fetchTodayTimeEntry(user.id),
-                fetchFlexBalance(user.id),
+                fetchMySchedule(),
+                fetchTodayTimeEntry(),
+                fetchFlexBalance(),
             ]);
 
             setSchedule(Array.isArray(scheduleData) ? scheduleData[0] : scheduleData);
@@ -72,7 +72,7 @@ function DashboardPage({ user }) {
             setError("");
             setActionLoading(action);
 
-            await postTimeAction(user.id, action);
+            await postTimeAction(action);
             await loadDashboardData();
         } catch (err) {
             setError(err.message);

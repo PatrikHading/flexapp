@@ -71,8 +71,8 @@ export const fetchCurrentUser = async () => {
     return await response.json();
 };
 
-export const fetchUserSchedule = async (userId) => {
-    const response = await fetch(`${API_BASE_URL}/api/schedules/${userId}`, {
+export const fetchMySchedule = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/me`, {
         credentials: "include",
     });
 
