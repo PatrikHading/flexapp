@@ -157,6 +157,7 @@ public class TimeEntryService {
         return toResponse(timeEntryRepository.save(timeEntry));
     }
 
+    @Transactional
     public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
         User currentUser = securityService.getCurrentUser();
         LocalDate today = LocalDate.now();
@@ -169,6 +170,7 @@ public class TimeEntryService {
         return saveManualEntry(currentUser, request, existingEntry);
     }
 
+    @Transactional
     public TimeEntryResponse registerManualEntryAsAdmin(Long userId, ManualTimeEntryRequest request) {
         securityService.validateAdminAccess();
 
