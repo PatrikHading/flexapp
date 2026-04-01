@@ -238,6 +238,8 @@ public class TimeEntryService {
             throw new BadRequestException("Work date is required.");
         }
 
+        validateManualTimeRange(request);
+
         LocalDate earliestAllowedDate = today.minusDays(MANUAL_ENTRY_MAX_DAYS_BACK);
 
         if (request.getWorkDate().isAfter(today)) {
@@ -261,8 +263,58 @@ public class TimeEntryService {
             throw new BadRequestException("Work date is required.");
         }
 
+        validateManualTimeRange(request);
+
         if (existingEntry != null) {
             throw new BadRequestException("A time entry already exists for this date and cannot be overwritten.");
+        }
+    }
+
+    private void validateManualTimeRange(ManualTimeEntryRequest request) {
+        LocalDate workDate = request.getWorkDate();
+        LocalDateTime checkInTime = request.getCheckInTime();
+        LocalDateTime lunchOutTime = request.getLunchOutTime();
+        LocalDateTime lunchInTime = request.getLunchInTime();
+        LocalDateTime checkOutTime = request.getCheckOutTime();
+
+        if (checkInTime == null || checkOutTime == null) {
+            return;
+        }
+
+        if (!checkOutTime.isAfter(checkInTime) && !checkOutTime.isEqual(checkInTime)) {
+            throw new BadRequestException("Check-out time cannot be before check-in time.");
+        }
+
+        if (!checkInTime.toLocalDate().isEqual(workDate)) {
+            throw new BadRequestException("Work date must match the check-in date.");
+        }
+
+        LocalDate checkOutDate = checkOutTime.toLocalDate();
+        if (!checkOutDate.isEqual(workDate) && !checkOutDate.isEqual(workDate.plusDays(1))) {
+            throw new BadRequestException("Check-out time must be on the work date or the following day.");
+        }
+
+        boolean hasLunchOut = lunchOutTime != null;
+        boolean hasLunchIn = lunchInTime != null;
+
+        if (hasLunchOut != hasLunchIn) {
+            throw new BadRequestException("Lunch out and lunch in must both be provided or both be omitted.");
+        }
+
+        if (!hasLunchOut) {
+            return;
+        }
+
+        if (lunchOutTime.isBefore(checkInTime)) {
+            throw new BadRequestException("Lunch out time cannot be before check-in time.");
+        }
+
+        if (lunchInTime.isBefore(lunchOutTime)) {
+            throw new BadRequestException("Lunch in time cannot be before lunch out time.");
+        }
+
+        if (lunchInTime.isAfter(checkOutTime)) {
+            throw new BadRequestException("Lunch in time cannot be after check-out time.");
         }
     }
 
