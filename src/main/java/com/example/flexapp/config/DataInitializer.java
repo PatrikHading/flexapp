@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -39,16 +40,23 @@ public class DataInitializer implements CommandLineRunner {
 
         for (User user : users) {
             for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-                workScheduleService.seedSchedule(
-                        user.getId(),
-                        date,
-                        LocalTime.of(8, 0),
-                        LocalTime.of(16, 0),
-                        30
-                );
+                if (isWeekday(date)) {
+                    workScheduleService.seedSchedule(
+                            user.getId(),
+                            date,
+                            LocalTime.of(8, 0),
+                            LocalTime.of(16, 0),
+                            30
+                    );
+                }
             }
         }
 
-        System.out.println("Seeded default schedules for existing users in seed profile.");
+        System.out.println("Seeded default weekday schedules for existing users in seed profile.");
+    }
+
+    private boolean isWeekday(LocalDate date) {
+        return date.getDayOfWeek() != DayOfWeek.SATURDAY
+                && date.getDayOfWeek() != DayOfWeek.SUNDAY;
     }
 }
