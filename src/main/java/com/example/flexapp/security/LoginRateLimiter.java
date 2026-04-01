@@ -17,91 +17,130 @@ public class LoginRateLimiter {
     private static final long ENTRY_TTL_SECONDS = WINDOW_SECONDS * 2;
 
     private static class Attempt {
-        int count;
+        int failures;
+        int inFlight;
         Instant windowStart;
         Instant lastSeen;
 
         Attempt(Instant now) {
-            this.count = 0;
+            this.failures = 0;
+            this.inFlight = 0;
             this.windowStart = now;
             this.lastSeen = now;
         }
 
         void resetWindow(Instant now) {
-            this.count = 0;
+            this.failures = 0;
+            this.inFlight = 0;
             this.windowStart = now;
             this.lastSeen = now;
         }
 
         boolean isExpired(Instant now) {
-            return now.isAfter(lastSeen.plusSeconds(ENTRY_TTL_SECONDS));
+            return inFlight == 0 && now.isAfter(lastSeen.plusSeconds(ENTRY_TTL_SECONDS));
         }
     }
 
     private final Map<String, Attempt> ipAttempts = new ConcurrentHashMap<>();
     private final Map<String, Attempt> emailAttempts = new ConcurrentHashMap<>();
 
-    public boolean isBlocked(String clientIp, String email) {
+    public boolean tryAcquire(String clientIp, String email) {
         Instant now = Instant.now();
 
         String normalizedIp = normalizeIp(clientIp);
         String normalizedEmail = normalizeEmail(email);
 
-        return isBlocked(ipAttempts, normalizedIp, MAX_IP_FAILURES, now)
-                || isBlocked(emailAttempts, normalizedEmail, MAX_EMAIL_FAILURES, now);
+        if (!tryAcquire(ipAttempts, normalizedIp, MAX_IP_FAILURES, now)) {
+            return false;
+        }
+
+        if (!tryAcquire(emailAttempts, normalizedEmail, MAX_EMAIL_FAILURES, now)) {
+            release(ipAttempts, normalizedIp, now);
+            return false;
+        }
+
+        return true;
     }
 
     public void recordFailure(String clientIp, String email) {
         Instant now = Instant.now();
 
-        increment(ipAttempts, normalizeIp(clientIp), now);
-        increment(emailAttempts, normalizeEmail(email), now);
+        recordFailure(ipAttempts, normalizeIp(clientIp), now);
+        recordFailure(emailAttempts, normalizeEmail(email), now);
     }
 
-    public void recordSuccess(String email) {
-        String normalizedEmail = normalizeEmail(email);
-        emailAttempts.remove(normalizedEmail);
+    public void recordSuccess(String clientIp, String email) {
+        Instant now = Instant.now();
+
+        release(ipAttempts, normalizeIp(clientIp), now);
+        clear(emailAttempts, normalizeEmail(email));
     }
 
-    private boolean isBlocked(Map<String, Attempt> attemptsMap,
-                              String key,
-                              int maxFailures,
-                              Instant now) {
+    private boolean tryAcquire(Map<String, Attempt> attemptsMap,
+                               String key,
+                               int maxFailures,
+                               Instant now) {
 
-        Attempt attempt = attemptsMap.compute(key, (k, existing) -> {
-            if (existing == null || existing.isExpired(now)) {
-                return new Attempt(now);
+        final boolean[] allowed = {false};
+
+        attemptsMap.compute(key, (k, existing) -> {
+            Attempt attempt = getCurrentAttempt(existing, now);
+            attempt.lastSeen = now;
+
+            if (attempt.failures + attempt.inFlight >= maxFailures) {
+                allowed[0] = false;
+                return attempt;
             }
-            return existing;
+
+            attempt.inFlight++;
+            allowed[0] = true;
+            return attempt;
         });
 
-        synchronized (attempt) {
-            if (now.isAfter(attempt.windowStart.plusSeconds(WINDOW_SECONDS))) {
-                attempt.resetWindow(now);
-                return false;
-            }
-
-            attempt.lastSeen = now;
-            return attempt.count >= maxFailures;
-        }
+        return allowed[0];
     }
 
-    private void increment(Map<String, Attempt> attemptsMap, String key, Instant now) {
-        Attempt attempt = attemptsMap.compute(key, (k, existing) -> {
-            if (existing == null || existing.isExpired(now)) {
-                return new Attempt(now);
-            }
-            return existing;
-        });
-
-        synchronized (attempt) {
-            if (now.isAfter(attempt.windowStart.plusSeconds(WINDOW_SECONDS))) {
-                attempt.resetWindow(now);
-            }
-
-            attempt.count++;
+    private void recordFailure(Map<String, Attempt> attemptsMap, String key, Instant now) {
+        attemptsMap.compute(key, (k, existing) -> {
+            Attempt attempt = getCurrentAttempt(existing, now);
             attempt.lastSeen = now;
+
+            if (attempt.inFlight > 0) {
+                attempt.inFlight--;
+            }
+
+            attempt.failures++;
+            return attempt;
+        });
+    }
+
+    private void release(Map<String, Attempt> attemptsMap, String key, Instant now) {
+        attemptsMap.computeIfPresent(key, (k, existing) -> {
+            Attempt attempt = getCurrentAttempt(existing, now);
+            attempt.lastSeen = now;
+
+            if (attempt.inFlight > 0) {
+                attempt.inFlight--;
+            }
+
+            return attempt.isExpired(now) ? null : attempt;
+        });
+    }
+
+    private void clear(Map<String, Attempt> attemptsMap, String key) {
+        attemptsMap.remove(key);
+    }
+
+    private Attempt getCurrentAttempt(Attempt existing, Instant now) {
+        if (existing == null || existing.isExpired(now)) {
+            return new Attempt(now);
         }
+
+        if (now.isAfter(existing.windowStart.plusSeconds(WINDOW_SECONDS))) {
+            existing.resetWindow(now);
+        }
+
+        return existing;
     }
 
     private String normalizeEmail(String email) {

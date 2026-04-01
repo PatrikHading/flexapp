@@ -59,7 +59,7 @@ public class AuthController {
         String clientIp = clientIpResolver.resolveClientIp(httpRequest);
         String email = request.getEmail();
 
-        if (rateLimiter.isBlocked(clientIp, email)) {
+        if (!rateLimiter.tryAcquire(clientIp, email)) {
             return ResponseEntity.status(429).build();
         }
 
@@ -71,7 +71,7 @@ public class AuthController {
             User user = (User) authentication.getPrincipal();
             String token = jwtService.generateToken(user);
 
-            rateLimiter.recordSuccess(email);
+            rateLimiter.recordSuccess(clientIp, email);
 
             String cookieValue = String.format(
                     "jwt=%s; Path=/; Max-Age=%d; HttpOnly; %s SameSite=Strict",
