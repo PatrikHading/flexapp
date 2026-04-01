@@ -39,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
 
         for (User user : users) {
             for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-                workScheduleService.createOrUpdateSchedule(
+                workScheduleService.seedSchedule(
                         user.getId(),
                         date,
                         LocalTime.of(8, 0),

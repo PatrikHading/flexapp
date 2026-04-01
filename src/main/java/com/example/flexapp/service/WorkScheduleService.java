@@ -7,8 +7,8 @@ import com.example.flexapp.entity.User;
 import com.example.flexapp.entity.WorkSchedule;
 import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
-import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.repository.UserRepository;
+import com.example.flexapp.repository.WorkScheduleRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.stereotype.Service;
 
@@ -37,36 +37,10 @@ public class WorkScheduleService {
         this.securityService = securityService;
     }
 
-    public WorkSchedule createOrUpdateSchedule(Long userId,
-                                               LocalDate workDate,
-                                               LocalTime plannedStartTime,
-                                               LocalTime plannedEndTime,
-                                               Integer paidLunchMinutes) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
-        validateScheduleInput(plannedStartTime, plannedEndTime, paidLunchMinutes);
-
-        int expectedWorkMinutes = calculateExpectedWorkMinutes(plannedStartTime, plannedEndTime);
-
-        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, workDate)
-                .orElseGet(WorkSchedule::new);
-
-        schedule.setUser(user);
-        schedule.setWorkDate(workDate);
-        schedule.setPlannedStartTime(plannedStartTime);
-        schedule.setPlannedEndTime(plannedEndTime);
-        schedule.setPaidLunchMinutes(paidLunchMinutes);
-        schedule.setExpectedWorkMinutes(expectedWorkMinutes);
-
-        return workScheduleRepository.save(schedule);
-    }
-
     public WorkScheduleResponse createOrUpdateSchedule(Long userId, WorkScheduleRequest request) {
         securityService.validateAdminAccess();
 
-        WorkSchedule saved = createOrUpdateSchedule(
+        WorkSchedule saved = saveSchedule(
                 userId,
                 request.getWorkDate(),
                 request.getPlannedStartTime(),
@@ -83,12 +57,11 @@ public class WorkScheduleService {
         validateRecurringScheduleRequest(request);
 
         List<WorkScheduleResponse> responses = new java.util.ArrayList<>();
-
         LocalDate currentDate = request.getStartDate();
 
         while (!currentDate.isAfter(request.getEndDate())) {
             if (isWeekday(currentDate)) {
-                WorkSchedule schedule = createOrUpdateSchedule(
+                WorkSchedule schedule = saveSchedule(
                         userId,
                         currentDate,
                         request.getPlannedStartTime(),
@@ -101,6 +74,22 @@ public class WorkScheduleService {
         }
 
         return responses;
+    }
+
+    public WorkScheduleResponse seedSchedule(Long userId,
+                                             LocalDate workDate,
+                                             LocalTime plannedStartTime,
+                                             LocalTime plannedEndTime,
+                                             Integer paidLunchMinutes) {
+        WorkSchedule saved = saveSchedule(
+                userId,
+                workDate,
+                plannedStartTime,
+                plannedEndTime,
+                paidLunchMinutes
+        );
+
+        return toResponse(saved);
     }
 
     public WorkScheduleResponse getCurrentUserScheduleForDate(LocalDate workDate) {
@@ -135,6 +124,32 @@ public class WorkScheduleService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private WorkSchedule saveSchedule(Long userId,
+                                      LocalDate workDate,
+                                      LocalTime plannedStartTime,
+                                      LocalTime plannedEndTime,
+                                      Integer paidLunchMinutes) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        validateScheduleInput(plannedStartTime, plannedEndTime, paidLunchMinutes);
+
+        int expectedWorkMinutes = calculateExpectedWorkMinutes(plannedStartTime, plannedEndTime);
+
+        WorkSchedule schedule = workScheduleRepository.findByUserIdAndWorkDate(userId, workDate)
+                .orElseGet(WorkSchedule::new);
+
+        schedule.setUser(user);
+        schedule.setWorkDate(workDate);
+        schedule.setPlannedStartTime(plannedStartTime);
+        schedule.setPlannedEndTime(plannedEndTime);
+        schedule.setPaidLunchMinutes(paidLunchMinutes);
+        schedule.setExpectedWorkMinutes(expectedWorkMinutes);
+
+        return workScheduleRepository.save(schedule);
     }
 
     private void validateScheduleInput(LocalTime plannedStartTime,
