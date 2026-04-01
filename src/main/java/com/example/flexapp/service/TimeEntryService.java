@@ -185,9 +185,10 @@ public class TimeEntryService {
         User currentUser = securityService.getCurrentUser();
         Long userId = currentUser.getId();
 
-        int totalFlexMinutes = Math.toIntExact(timeEntryRepository.sumFlexMinutesByUserId(userId));
+        Long totalFlexMinutes = timeEntryRepository.sumFlexMinutesByUserId(userId);
+        Long safeTotalFlexMinutes = totalFlexMinutes != null ? totalFlexMinutes : 0L;
 
-        return new FlexBalanceResponse(userId, totalFlexMinutes);
+        return new FlexBalanceResponse(userId, safeTotalFlexMinutes);
     }
 
     @Transactional

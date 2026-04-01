@@ -8,5 +8,5 @@ import lombok.Getter;
 public class FlexBalanceResponse {
 
     private Long userId;
-    private Integer totalFlexMinutes;
+    private Long totalFlexMinutes;
 }
