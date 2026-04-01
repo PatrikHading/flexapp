@@ -284,9 +284,6 @@ export const createManualTimeEntry = async ({ workDate, checkInTime, lunchOutTim
         comment,
     };
 
-    console.log("Manual time entry payload:", payload);
-    console.log("Manual time entry JSON:", JSON.stringify(payload));
-
     const response = await fetch(`${API_BASE_URL}/api/time/manual`, {
         method: "POST",
         credentials: "include",
@@ -297,7 +294,6 @@ export const createManualTimeEntry = async ({ workDate, checkInTime, lunchOutTim
     if (!response.ok) {
         if (response.status === 401) throw new Error("Sessionen har gått ut.");
         const errorText = await response.text();
-        console.error("Manual time entry backend error:", errorText);
         throw new Error(errorText || "Kunde inte spara manuell tidrapport.");
     }
 
