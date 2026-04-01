@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,7 +41,8 @@ public class User implements UserDetails {
     @Column(name = "role", nullable = false, length = 20)
     private Role role;
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "active", nullable = false)
@@ -51,8 +53,6 @@ public class User implements UserDetails {
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-
         if (this.tokenVersion == null) {
             this.tokenVersion = 0;
         }
