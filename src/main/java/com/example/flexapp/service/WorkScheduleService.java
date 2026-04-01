@@ -118,13 +118,8 @@ public class WorkScheduleService {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
 
-        return workScheduleRepository.findByUserIdAndWorkDateBetween(
-                        userId,
-                        LocalDate.of(2000, 1, 1),
-                        LocalDate.of(2100, 1, 1)
-                )
+        return workScheduleRepository.findAllByUserIdOrderByWorkDateDesc(userId)
                 .stream()
-                .sorted((a, b) -> b.getWorkDate().compareTo(a.getWorkDate()))
                 .map(this::toResponse)
                 .toList();
     }
