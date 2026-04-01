@@ -70,9 +70,7 @@ public class LoginRateLimiter {
     }
 
     public void recordSuccess(String clientIp, String email) {
-        Instant now = Instant.now();
-
-        release(ipAttempts, normalizeIp(clientIp), now);
+        clear(ipAttempts, normalizeIp(clientIp));
         clear(emailAttempts, normalizeEmail(email));
     }
 
