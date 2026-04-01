@@ -10,13 +10,16 @@ import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.UserRepository;
 import com.example.flexapp.security.SecurityService;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class AdminUserService {
+
+    private static final Sort DEFAULT_USER_SORT = Sort.by(Sort.Direction.DESC, "id");
 
     private final UserRepository userRepository;
     private final SecurityService securityService;
@@ -30,11 +33,11 @@ public class AdminUserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public List<UserProfileResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::toUserProfileResponse)
-                .toList();
+    public Page<UserProfileResponse> getAllUsers(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, DEFAULT_USER_SORT);
+
+        return userRepository.findAll(pageRequest)
+                .map(this::toUserProfileResponse);
     }
 
     public UserProfileResponse createUser(CreateUserRequest request) {

@@ -9,15 +9,18 @@ import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.service.AdminUserService;
 import com.example.flexapp.service.TimeEntryService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -30,8 +33,11 @@ public class AdminUserController {
     }
 
     @GetMapping
-    public List<UserProfileResponse> getAllUsers() {
-        return adminUserService.getAllUsers();
+    public Page<UserProfileResponse> getAllUsers(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
+    ) {
+        return adminUserService.getAllUsers(page, size);
     }
 
     @PostMapping
