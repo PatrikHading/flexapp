@@ -4,12 +4,14 @@ import com.example.flexapp.dto.RecurringWorkScheduleRequest;
 import com.example.flexapp.dto.WorkScheduleRequest;
 import com.example.flexapp.dto.WorkScheduleResponse;
 import com.example.flexapp.service.WorkScheduleService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users/{userId}/schedules")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminScheduleController {
 
     private final WorkScheduleService workScheduleService;

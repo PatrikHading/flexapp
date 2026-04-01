@@ -5,7 +5,6 @@ import com.example.flexapp.dto.AdminUpdateUserRequest;
 import com.example.flexapp.dto.CreateUserRequest;
 import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.entity.User;
-import com.example.flexapp.exception.AccessDeniedException;
 import com.example.flexapp.exception.BadRequestException;
 import com.example.flexapp.exception.ResourceNotFoundException;
 import com.example.flexapp.repository.UserRepository;
@@ -32,8 +31,6 @@ public class AdminUserService {
     }
 
     public List<UserProfileResponse> getAllUsers() {
-        requireAdmin();
-
         return userRepository.findAll()
                 .stream()
                 .map(this::toUserProfileResponse)
@@ -41,8 +38,6 @@ public class AdminUserService {
     }
 
     public UserProfileResponse createUser(CreateUserRequest request) {
-        requireAdmin();
-
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(normalizedEmail)) {
@@ -62,8 +57,6 @@ public class AdminUserService {
     }
 
     public UserProfileResponse updateUser(Long userId, AdminUpdateUserRequest request) {
-        requireAdmin();
-
         User currentUser = securityService.getCurrentUser();
 
         User user = userRepository.findById(userId)
@@ -89,8 +82,6 @@ public class AdminUserService {
     }
 
     public void changeUserPassword(Long userId, AdminChangePasswordRequest request) {
-        requireAdmin();
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -104,8 +95,6 @@ public class AdminUserService {
     }
 
     public void deactivateUser(Long userId) {
-        requireAdmin();
-
         User currentUser = securityService.getCurrentUser();
 
         User user = userRepository.findById(userId)
@@ -118,29 +107,23 @@ public class AdminUserService {
         userRepository.save(user);
     }
 
-    private void requireAdmin() {
-        if (!securityService.isAdmin()) {
-            throw new AccessDeniedException("Only admins can manage users.");
-        }
-    }
-
     private void validateNoSelfLockoutOnUpdate(User currentUser, User targetUser, AdminUpdateUserRequest request) {
         if (!currentUser.getId().equals(targetUser.getId())) {
             return;
         }
 
         if (!request.isActive()) {
-            throw new AccessDeniedException("Admins cannot deactivate their own account.");
+            throw new com.example.flexapp.exception.AccessDeniedException("Admins cannot deactivate their own account.");
         }
 
         if (request.getRole() != currentUser.getRole()) {
-            throw new AccessDeniedException("Admins cannot change their own role.");
+            throw new com.example.flexapp.exception.AccessDeniedException("Admins cannot change their own role.");
         }
     }
 
     private void validateNoSelfDeactivate(User currentUser, User targetUser) {
         if (currentUser.getId().equals(targetUser.getId())) {
-            throw new AccessDeniedException("Admins cannot deactivate their own account.");
+            throw new com.example.flexapp.exception.AccessDeniedException("Admins cannot deactivate their own account.");
         }
     }
 
