@@ -33,8 +33,6 @@ public class UserService {
     public UserProfileResponse updateCurrentUserProfile(UpdateProfileRequest request) {
         User currentUser = securityService.getCurrentUser();
 
-        validateProfileRequest(request);
-
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         if (!currentUser.getEmail().equalsIgnoreCase(normalizedEmail)
@@ -53,18 +51,6 @@ public class UserService {
     public void changePassword(ChangePasswordRequest request) {
         User currentUser = securityService.getCurrentUser();
 
-        if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
-            throw new BadRequestException("Current password is required.");
-        }
-
-        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
-            throw new BadRequestException("New password is required.");
-        }
-
-        if (request.getNewPassword().length() < 12) {
-            throw new BadRequestException("New password must be at least 12 characters long.");
-        }
-
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
             throw new BadRequestException("Current password is incorrect.");
         }
@@ -82,24 +68,6 @@ public class UserService {
         User currentUser = securityService.getCurrentUser();
         currentUser.incrementTokenVersion();
         userRepository.save(currentUser);
-    }
-
-    private void validateProfileRequest(UpdateProfileRequest request) {
-        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
-            throw new BadRequestException("First name is required.");
-        }
-
-        if (request.getLastName() == null || request.getLastName().isBlank()) {
-            throw new BadRequestException("Last name is required.");
-        }
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("Email is required.");
-        }
-
-        if (!request.getEmail().contains("@")) {
-            throw new BadRequestException("Email must be valid.");
-        }
     }
 
     private UserProfileResponse toProfileResponse(User user) {

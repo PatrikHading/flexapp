@@ -8,9 +8,10 @@ import com.example.flexapp.dto.TimeEntryResponse;
 import com.example.flexapp.dto.UserProfileResponse;
 import com.example.flexapp.service.AdminUserService;
 import com.example.flexapp.service.TimeEntryService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -38,7 +39,7 @@ public class AdminUserController {
 
     @PutMapping("/{id}")
     public UserProfileResponse updateUser(@PathVariable Long id,
-                                          @RequestBody AdminUpdateUserRequest request) {
+                                          @Valid @RequestBody AdminUpdateUserRequest request) {
         return adminUserService.updateUser(id, request);
     }
 
@@ -50,7 +51,7 @@ public class AdminUserController {
 
     @PutMapping("/{id}/password")
     public ResponseEntity<Void> changeUserPassword(@PathVariable Long id,
-                                                   @RequestBody AdminChangePasswordRequest request) {
+                                                   @Valid @RequestBody AdminChangePasswordRequest request) {
         adminUserService.changeUserPassword(id, request);
         return ResponseEntity.noContent().build();
     }

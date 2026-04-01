@@ -42,8 +42,6 @@ public class AdminUserService {
     public UserProfileResponse createUser(CreateUserRequest request) {
         requireAdmin();
 
-        validateCreateUserRequest(request);
-
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(normalizedEmail)) {
@@ -70,8 +68,6 @@ public class AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        validateAdminUpdateRequest(request);
-
         validateNoSelfLockoutOnUpdate(currentUser, user, request);
 
         String normalizedEmail = request.getEmail().trim().toLowerCase();
@@ -96,8 +92,6 @@ public class AdminUserService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
-        validateAdminChangePasswordRequest(request);
 
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             throw new BadRequestException("New password must be different from the current password.");
@@ -146,68 +140,6 @@ public class AdminUserService {
     private void validateNoSelfDeactivate(User currentUser, User targetUser) {
         if (currentUser.getId().equals(targetUser.getId())) {
             throw new AccessDeniedException("Admins cannot deactivate their own account.");
-        }
-    }
-
-    private void validateCreateUserRequest(CreateUserRequest request) {
-        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
-            throw new BadRequestException("First name is required.");
-        }
-
-        if (request.getLastName() == null || request.getLastName().isBlank()) {
-            throw new BadRequestException("Last name is required.");
-        }
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("Email is required.");
-        }
-
-        if (!request.getEmail().contains("@")) {
-            throw new BadRequestException("Email must be valid.");
-        }
-
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new BadRequestException("Password is required.");
-        }
-
-        if (request.getPassword().length() < 12) {
-            throw new BadRequestException("Password must be at least 12 characters long.");
-        }
-
-        if (request.getRole() == null) {
-            throw new BadRequestException("Role is required.");
-        }
-    }
-
-    private void validateAdminUpdateRequest(AdminUpdateUserRequest request) {
-        if (request.getFirstName() == null || request.getFirstName().isBlank()) {
-            throw new BadRequestException("First name is required.");
-        }
-
-        if (request.getLastName() == null || request.getLastName().isBlank()) {
-            throw new BadRequestException("Last name is required.");
-        }
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("Email is required.");
-        }
-
-        if (!request.getEmail().contains("@")) {
-            throw new BadRequestException("Email must be valid.");
-        }
-
-        if (request.getRole() == null) {
-            throw new BadRequestException("Role is required.");
-        }
-    }
-
-    private void validateAdminChangePasswordRequest(AdminChangePasswordRequest request) {
-        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
-            throw new BadRequestException("New password is required.");
-        }
-
-        if (request.getNewPassword().length() < 12) {
-            throw new BadRequestException("New password must be at least 12 characters long.");
         }
     }
 
