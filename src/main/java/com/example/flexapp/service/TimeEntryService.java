@@ -194,24 +194,24 @@ public class TimeEntryService {
     @Transactional
     public TimeEntryResponse registerManualEntry(ManualTimeEntryRequest request) {
         User currentUser = securityService.getCurrentUser();
+        User lockedUser = lockUser(currentUser.getId());
         LocalDate today = LocalDate.now();
 
-        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(currentUser.getId(), request.getWorkDate())
+        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(lockedUser.getId(), request.getWorkDate())
                 .orElse(null);
 
         validateManualRequest(request, today, existingEntry);
 
-        return saveManualEntry(currentUser, request, existingEntry);
+        return saveManualEntry(lockedUser, request, existingEntry);
     }
 
     @Transactional
     public TimeEntryResponse registerManualEntryAsAdmin(Long userId, ManualTimeEntryRequest request) {
         securityService.validateAdminAccess();
 
-        User targetUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        User targetUser = lockUser(userId);
 
-        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(userId, request.getWorkDate())
+        TimeEntry existingEntry = timeEntryRepository.findByUserIdAndWorkDate(targetUser.getId(), request.getWorkDate())
                 .orElse(null);
 
         validateAdminManualRequest(request, existingEntry);
